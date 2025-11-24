@@ -1,18 +1,18 @@
 package app
 
 import (
+	"fmiis/internal/auth"
 	"fmiis/internal/config"
 	"fmiis/internal/database"
-	"fmiis/internal/auth"
-	"fmiis/internal/user"
 	"fmiis/internal/middleware"
+	"fmiis/internal/user"
 )
 
 type App struct {
 	Config      *config.Config
 	DB          *database.MongoInstance
 	AuthHandler *auth.Handler
-	UserHandler *user.Handler
+	UserHandler *user.UserHandler
 	Middlewares *middleware.Manager
 }
 
@@ -32,19 +32,19 @@ func NewApp(cfg *config.Config) (*App, error) {
 }
 
 func (a *App) initModules() {
-	// TODO: in future fill services/repo; for now create minimal handlers
-	a.AuthHandler = NewAuthHandler(a)
-	a.UserHandler = NewUserHandler(a)
+	// Initialize User module
+	userRepo := user.NewUserRepository(a.DB.DB)
+	authService := auth.NewAuthService()
+	userService := user.NewUserService(userRepo, authService)
+	a.UserHandler = user.NewUserHandler(userService)
+
+	// Placeholder for AuthHandler if needed separately, or remove if merged
+	a.AuthHandler = &auth.Handler{}
 }
 
 // NewAuthHandler creates a minimal auth handler when other modules are not ready.
 func NewAuthHandler(a *App) *auth.Handler {
 	return &auth.Handler{}
-}
-
-// NewUserHandler creates a minimal user handler when other modules are not ready.
-func NewUserHandler(a *App) *user.Handler {
-	return &user.Handler{}
 }
 
 // StartServer is implemented in internal/app/server.go
