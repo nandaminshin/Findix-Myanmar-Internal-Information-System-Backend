@@ -25,6 +25,15 @@ func NewUserRepository(db *mongo.Database) UserRepository {
 	}
 }
 
+func IsValidRole(role Role) bool {
+	switch role {
+	case "dev", "glob", "hr", "gm", "md":
+		return true
+	default:
+		return false
+	}
+}
+
 func (r *mongoUserRepository) Create(ctx context.Context, user *User) error {
 	user.ID = primitive.NewObjectID()
 	user.CreatedAt = time.Now()

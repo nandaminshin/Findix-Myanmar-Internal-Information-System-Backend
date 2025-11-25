@@ -9,11 +9,11 @@ import (
 )
 
 type App struct {
-	Config      *config.Config
-	DB          *database.MongoInstance
-	AuthHandler *auth.Handler
-	UserHandler *user.UserHandler
-	Middlewares *middleware.Manager
+	Config         *config.Config
+	DB             *database.MongoInstance
+	AuthHandler    *auth.Handler
+	UserHandler    *user.UserHandler
+	AuthMiddleware middleware.AuthMiddleware
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -26,7 +26,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 		Config: cfg,
 		DB:     db,
 	}
-	a.Middlewares = middleware.NewManager(cfg)
 	a.initModules()
 	return a, nil
 }
@@ -37,6 +36,7 @@ func (a *App) initModules() {
 	authService := auth.NewAuthService()
 	userService := user.NewUserService(userRepo, authService)
 	a.UserHandler = user.NewUserHandler(userService)
+	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)
 
 	// Placeholder for AuthHandler if needed separately, or remove if merged
 	a.AuthHandler = &auth.Handler{}

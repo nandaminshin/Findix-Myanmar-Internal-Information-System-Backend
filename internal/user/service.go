@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmiis/internal/auth"
+	"os"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,6 +28,13 @@ func NewUserService(repo UserRepository, authService auth.AuthService) UserServi
 }
 
 func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*UserResponse, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, err
+	}
+	if req.SecretCode != os.Getenv("SECRET_CODE") {
+		return nil, errors.New("access denied, invalid secret code")
+	}
 	existingUser, err := s.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
@@ -39,11 +48,18 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		return nil, err
 	}
 
+	// Default role to "user" if not provided
+	role := req.Role
+	if role == "" {
+		role = "glob"
+	}
+
 	user := &User{
 		Name:     req.Name,
 		Email:    req.Email,
-		Phone:    req.Phone,
 		Password: string(hashedPassword),
+		Phone:    req.Phone,
+		Role:     role,
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {
@@ -55,6 +71,7 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		Name:  user.Name,
 		Email: user.Email,
 		Phone: user.Phone,
+		Role:  user.Role,
 	}, nil
 }
 
@@ -71,7 +88,7 @@ func (s *userService) Login(ctx context.Context, req *LoginRequest) (*UserRespon
 		return nil, errors.New("invalid credentials")
 	}
 
-	token, err := s.authService.GenerateToken(user.ID.Hex())
+	token, err := s.authService.GenerateToken(user.ID.Hex(), string(user.Role))
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +97,9 @@ func (s *userService) Login(ctx context.Context, req *LoginRequest) (*UserRespon
 		ID:    user.ID.Hex(),
 		Name:  user.Name,
 		Email: user.Email,
+		Role:  user.Role,
+		Phone: user.Phone,
+		Image: user.Image,
 		Token: token,
 	}, nil
 }
