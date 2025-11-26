@@ -18,7 +18,7 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 		protected := api.Group("")
 		protected.Use(a.AuthMiddleware.Handle())
 		{
-
+			protected.POST("/send-notification", a.NotificationHandler.SendNotification)
 			// Other protected routes
 		}
 	}

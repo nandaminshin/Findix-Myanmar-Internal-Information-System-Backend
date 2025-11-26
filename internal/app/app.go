@@ -5,15 +5,17 @@ import (
 	"fmiis/internal/config"
 	"fmiis/internal/database"
 	"fmiis/internal/middleware"
+	"fmiis/internal/notification"
 	"fmiis/internal/user"
 )
 
 type App struct {
-	Config         *config.Config
-	DB             *database.MongoInstance
-	AuthHandler    *auth.Handler
-	UserHandler    *user.UserHandler
-	AuthMiddleware middleware.AuthMiddleware
+	Config              *config.Config
+	DB                  *database.MongoInstance
+	AuthHandler         *auth.Handler
+	UserHandler         *user.UserHandler
+	AuthMiddleware      middleware.AuthMiddleware
+	NotificationHandler *notification.NotificationHandler
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -37,6 +39,9 @@ func (a *App) initModules() {
 	userService := user.NewUserService(userRepo, authService)
 	a.UserHandler = user.NewUserHandler(userService)
 	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)
+	notificationRepo := notification.NewNotificationRepository(a.DB.DB)
+	notificationService := notification.NewNotificationService(notificationRepo)
+	a.NotificationHandler = notification.NewNotificationHandler(notificationService)
 
 	// Placeholder for AuthHandler if needed separately, or remove if merged
 	a.AuthHandler = &auth.Handler{}
