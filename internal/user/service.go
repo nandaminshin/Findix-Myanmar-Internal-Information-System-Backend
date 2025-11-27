@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmiis/internal/auth"
+	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -13,6 +15,7 @@ import (
 type UserService interface {
 	Register(ctx context.Context, req *RegisterRequest) (*UserResponse, error)
 	Login(ctx context.Context, req *LoginRequest) (*UserResponse, error)
+	GetUserByEmail(ctx context.Context, email string) (*User, error)
 }
 
 type userService struct {
@@ -102,4 +105,19 @@ func (s *userService) Login(ctx context.Context, req *LoginRequest) (*UserRespon
 		Image: user.Image,
 		Token: token,
 	}, nil
+
+}
+
+func (s *userService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	if email == "" {
+		return nil, fmt.Errorf("email cannot be empty")
+	}
+
+	user, err := s.repo.FindByEmail(ctx, email)
+	if err != nil {
+		log.Printf("Error getting user by email %s: %v", email, err)
+		return nil, err
+	}
+
+	return user, nil
 }

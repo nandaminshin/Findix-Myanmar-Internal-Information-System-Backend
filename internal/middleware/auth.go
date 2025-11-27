@@ -26,49 +26,49 @@ func NewAuthMiddleware(authService auth.AuthService) AuthMiddleware {
 
 func (m *authMiddleware) Handle() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		// Only check cookie for token
+		tokenString, err := c.Cookie("jwt_token")
+		if err != nil || tokenString == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error":   "Authentication required",
+				"details": "Please log in to access this resource",
+			})
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
-			return
-		}
-
-		tokenString := parts[1]
 		token, err := m.authService.ValidateToken(tokenString)
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Token is invalid or expired",
+			})
 			return
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims) // jwt.MapClaims is map[string]interface{}
+		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			// Try casting to jwt.MapClaims if gin.MapClaims fails or if they are different types in this context
-			// But usually they are compatible. Let's be safe and use type assertion on interface{}
-			// Re-parsing claims might be safer if we want to be strict, but ValidateToken returns *jwt.Token
-			// Let's assume standard jwt.MapClaims
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token claims",
+			})
 			return
 		}
 
-		userID, ok := claims["user_id"].(string)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		userId, ok := claims["user_id"].(string)
+		if !ok || userId == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid user ID in token",
+			})
 			return
 		}
 
 		role, ok := claims["role"].(string)
-		if !ok {
-			// If role is missing, default to user or handle as error.
-			// For now, let's assume it might be missing for old tokens, but we want to enforce it.
-			role = "glob"
+		if !ok || role == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Undefined user role",
+			})
+			return
 		}
 
-		c.Set("userID", userID)
+		c.Set("userID", userId)
 		c.Set("role", role)
 		c.Next()
 	}
@@ -95,6 +95,10 @@ func (m *authMiddleware) RequireRole(allowedRoles ...string) gin.HandlerFunc {
 			}
 		}
 
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden: insufficient permissions"})
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": "Forbidden: insufficient permissions",
+			"details": "Required roles: " + strings.Join(allowedRoles, ", ") +
+				", Your role: " + roleStr,
+		})
 	}
 }

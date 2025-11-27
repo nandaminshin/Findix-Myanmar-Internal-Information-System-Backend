@@ -11,14 +11,14 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 	api := r.Group("/api/v1")
 	{
 		// PUBLIC routes
-		api.POST("/register", a.UserHandler.Register)
 		api.POST("/login", a.UserHandler.Login)
 
 		// PROTECTED routes
-		protected := api.Group("")
-		protected.Use(a.AuthMiddleware.Handle())
+		protectedApi := api.Group("")
+		protectedApi.Use(a.AuthMiddleware.Handle())
 		{
-			protected.POST("/send-notification", a.NotificationHandler.SendNotification)
+			protectedApi.POST("/register", a.UserHandler.Register)
+			protectedApi.POST("/send-notification", a.NotificationHandler.SendNotification)
 			// Other protected routes
 		}
 	}

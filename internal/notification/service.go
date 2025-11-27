@@ -2,20 +2,39 @@ package notification
 
 import (
 	"context"
+	"fmiis/internal/common"
+	"fmiis/internal/user"
 )
 
 type NotificationService interface {
 	SendNotification(ctx context.Context, req *NotificationRequest) (*NotificationResponse, error)
+	GetUserByEmail(ctx context.Context, email string) (*user.User, error)
+	FetchCurrentUser(ctx context.Context, email string) (*user.User, error)
+	SendSystemEmail(senderEmail, receiverEmail, content, notiType string) error
 }
 
 type notificationService struct {
-	repo NotificationRepository
+	repo      NotificationRepository
+	utilities common.Utilities
 }
 
-func NewNotificationService(repo NotificationRepository) NotificationService {
+func NewNotificationService(repo NotificationRepository, utilities common.Utilities) NotificationService {
 	return &notificationService{
-		repo: repo,
+		repo:      repo,
+		utilities: utilities,
 	}
+}
+
+func (s *notificationService) FetchCurrentUser(ctx context.Context, email string) (*user.User, error) {
+	sender, err := s.utilities.GetCurrentUser(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	return sender, nil
+}
+
+func (s *notificationService) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	return nil, nil
 }
 
 func (s *notificationService) SendNotification(ctx context.Context, req *NotificationRequest) (*NotificationResponse, error) {
@@ -39,4 +58,8 @@ func (s *notificationService) SendNotification(ctx context.Context, req *Notific
 		CreatedAt: notification.CreatedAt,
 		UpdatedAt: notification.UpdatedAt,
 	}, nil
+}
+
+func (s *notificationService) SendSystemEmail(senderEmail, receiverEmail, content, notiType string) error {
+	return s.utilities.SendEmail(senderEmail, receiverEmail, content, notiType)
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmiis/internal/auth"
+	"fmiis/internal/common"
 	"fmiis/internal/config"
 	"fmiis/internal/database"
 	"fmiis/internal/middleware"
@@ -16,6 +17,7 @@ type App struct {
 	UserHandler         *user.UserHandler
 	AuthMiddleware      middleware.AuthMiddleware
 	NotificationHandler *notification.NotificationHandler
+	Utilities           *common.Utilities
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -37,14 +39,18 @@ func (a *App) initModules() {
 	userRepo := user.NewUserRepository(a.DB.DB)
 	authService := auth.NewAuthService()
 	userService := user.NewUserService(userRepo, authService)
+	a.Utilities = common.NewUtility(userService)
 	a.UserHandler = user.NewUserHandler(userService)
 	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)
+
 	notificationRepo := notification.NewNotificationRepository(a.DB.DB)
-	notificationService := notification.NewNotificationService(notificationRepo)
-	a.NotificationHandler = notification.NewNotificationHandler(notificationService)
+	notificationService := notification.NewNotificationService(notificationRepo, *a.Utilities)
+	a.NotificationHandler = notification.NewNotificationHandler(notificationService, userService)
 
 	// Placeholder for AuthHandler if needed separately, or remove if merged
 	a.AuthHandler = &auth.Handler{}
+
+	//Utilities
 }
 
 // NewAuthHandler creates a minimal auth handler when other modules are not ready.
