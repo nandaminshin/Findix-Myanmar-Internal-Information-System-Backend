@@ -1,10 +1,7 @@
 package config
 
 import (
-	"log"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -16,10 +13,6 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Failed to load .env :", err)
-	}
 
 	cfg := &Config{
 		AppEnv:    getEnv("APP_ENV", "development"),

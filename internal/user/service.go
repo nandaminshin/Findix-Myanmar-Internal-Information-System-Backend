@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,10 +30,6 @@ func NewUserService(repo UserRepository, authService auth.AuthService) UserServi
 }
 
 func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*UserResponse, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
-	}
 	if req.SecretCode != os.Getenv("SECRET_CODE") {
 		return nil, errors.New("access denied, invalid secret code")
 	}
