@@ -11,17 +11,23 @@ import (
 type NotiType string
 
 const (
-	morning_meeting_noti   NotiType = "morning_meeting_noti"
-	dev_meeting_noti       NotiType = "dev_meeting_noti"
-	emergency_meeting_noti NotiType = "emergency_meeting_noti"
-	general_noti           NotiType = "general_noti"
+	morning_meeting_noti   NotiType = "Morning Meeting"
+	dev_meeting_noti       NotiType = "Developer Meeting"
+	emergency_meeting_noti NotiType = "Emergency Meeting"
+	general_noti           NotiType = "General"
 )
+
+type Receiver struct {
+	ID    primitive.ObjectID `bson:"id" json:"id"`
+	Name  string             `bson:"name" json:"name"`
+	Email string             `bson:"email" json:"email"`
+}
 
 type Notification struct {
 	ID        primitive.ObjectID `bson:"_id" json:"id"`
 	NotiType  NotiType           `bson:"noti_type" json:"noti_type"`
 	Sender    user.User          `bson:"sender" json:"sender"`
-	Receiver  user.User          `bson:"receiver" json:"receiver"`
+	Receivers []Receiver         `bson:"receivers" json:"receivers"`
 	Content   string             `bson:"content" json:"content"`
 	IsSeen    bool               `bson:"is_seen" json:"is_seen"`
 	CreatedAt time.Time          `bson:"created_at" json:"created_at"`

@@ -6,6 +6,7 @@ import (
 	"fmiis/internal/config"
 	"fmiis/internal/database"
 	"fmiis/internal/middleware"
+	"fmiis/internal/normal_email"
 	"fmiis/internal/notification"
 	"fmiis/internal/user"
 )
@@ -18,6 +19,7 @@ type App struct {
 	AuthMiddleware      middleware.AuthMiddleware
 	NotificationHandler *notification.NotificationHandler
 	Utilities           *common.Utilities
+	NormalEmailService  normal_email.EmailService
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -43,8 +45,9 @@ func (a *App) initModules() {
 	a.UserHandler = user.NewUserHandler(userService)
 	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)
 
+	a.NormalEmailService = normal_email.NewBrevoService()
 	notificationRepo := notification.NewNotificationRepository(a.DB.DB)
-	notificationService := notification.NewNotificationService(notificationRepo, *a.Utilities)
+	notificationService := notification.NewNotificationService(notificationRepo, *a.Utilities, a.NormalEmailService, userService)
 	a.NotificationHandler = notification.NewNotificationHandler(notificationService, userService)
 
 	// Placeholder for AuthHandler if needed separately, or remove if merged

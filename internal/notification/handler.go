@@ -1,6 +1,7 @@
 package notification
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -28,6 +29,8 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("Receivers:", req.Receivers)
+
 	// fetch sender by sender email
 	sender, err := h.service.FetchCurrentUser(c.Request.Context(), req.Sender.Email)
 	if err != nil {
@@ -36,29 +39,30 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 		return
 	}
 
-	// fetch receiver by receiver email
-	receiver, err := h.userService.GetUserByEmail(c.Request.Context(), req.Receiver.Email)
+	receivers, err := h.service.FetchReceivers(c.Request.Context(), req.Receivers)
 	if err != nil {
-		log.Printf("Receiver not found with email %s: %v", req.Receiver.Email, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Receiver not found"})
+		log.Printf("Error fetching receivers: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error fetching receivers"})
 		return
 	}
 
 	res, err := h.service.SendNotification(c.Request.Context(), &NotificationRequest{
-		NotiType: req.NotiType,
-		Sender:   *sender,
-		Receiver: *receiver,
-		Content:  req.Content,
-		IsSeen:   req.IsSeen,
+		NotiType:  req.NotiType,
+		Sender:    *sender,
+		Receivers: receivers,
+		Content:   req.Content,
+		IsSeen:    req.IsSeen,
 	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = h.service.SendSystemEmail(sender.Email, receiver.Email, req.Content, string(req.NotiType))
+	err = h.service.SendEmailNotificationForAllReceivers(receivers, res)
 	if err != nil {
-		log.Printf("Failed to send email notification: %v", err)
+		log.Printf("Error sending email notifications: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error sending email notifications"})
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, res)
