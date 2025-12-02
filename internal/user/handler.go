@@ -2,7 +2,6 @@ package user
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,7 +45,19 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("jwt_token", res.Token, 24*3600, "/", os.Getenv("DOMAIN"), true, true)
+	c.SetCookie("jwt_token", res.Token, 24*3600, "/", "", true, true)
 
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, gin.H{
+		"id":    res.ID,
+		"name":  res.Name,
+		"email": res.Email,
+		"role":  res.Role,
+		"phone": res.Phone,
+		"image": res.Image,
+	})
+}
+
+func (h *UserHandler) Logout(c *gin.Context) {
+	c.SetCookie("jwt_token", "", -1, "/", "", true, true)
+	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }

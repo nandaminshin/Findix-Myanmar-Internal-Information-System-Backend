@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmiis/internal/auth"
 	"fmiis/internal/common"
 	"fmiis/internal/config"
@@ -9,6 +10,9 @@ import (
 	"fmiis/internal/normal_email"
 	"fmiis/internal/notification"
 	"fmiis/internal/user"
+	"log"
+	"strings"
+	"time"
 )
 
 type App struct {
@@ -49,6 +53,7 @@ func (a *App) initModules() {
 	notificationRepo := notification.NewNotificationRepository(a.DB.DB)
 	notificationService := notification.NewNotificationService(notificationRepo, *a.Utilities, a.NormalEmailService, userService)
 	a.NotificationHandler = notification.NewNotificationHandler(notificationService, userService)
+	setupTTLIndex(notificationRepo)
 
 	// Placeholder for AuthHandler if needed separately, or remove if merged
 	a.AuthHandler = &auth.Handler{}
@@ -56,9 +61,37 @@ func (a *App) initModules() {
 	//Utilities
 }
 
+func setupTTLIndex(repo notification.NotificationRepository) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err := repo.SetupTTLIndex(ctx)
+	if err != nil {
+		// Check if it's just "index already exists" error
+		if isIndexExistsError(err) {
+			log.Println("✅ MongoDB TTL index already exists")
+		} else {
+			log.Printf("⚠️ Failed to setup TTL index: %v", err)
+			log.Printf("ℹ️ Notifications will not be auto-deleted. Manual cleanup may be needed.")
+		}
+	} else {
+		log.Println("✅ MongoDB TTL index created successfully")
+		log.Println("📅 Notifications will be automatically deleted after 7 days")
+	}
+}
+
+// Helper function to check if index already exists
+func isIndexExistsError(err error) bool {
+	// MongoDB returns specific error codes for duplicate indexes
+	// You might need to adjust this based on your MongoDB driver version
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "index already exists") || strings.Contains(msg, "duplicate key")
+}
+
 // NewAuthHandler creates a minimal auth handler when other modules are not ready.
 func NewAuthHandler(a *App) *auth.Handler {
 	return &auth.Handler{}
 }
-
-// StartServer is implemented in internal/app/server.go
