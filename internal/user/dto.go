@@ -23,3 +23,24 @@ type UserResponse struct {
 	Image string `json:"image,omitempty"`
 	Token string `json:"token,omitempty"`
 }
+
+type GmUpdateRequest struct {
+	Name       string `json:"name" binding:"required"`
+	Email      string `json:"email" binding:"required,email"`
+	Password   string `json:"password" binding:"required,min=3"`
+	Phone      string `json:"phone" binding:"required"`
+	Role       Role   `json:"role" binding:"required"`
+	SecretCode string `json:"secret_code" binding:"required"`
+	Image      string `json:"image,omitempty"`
+}
+
+type NormalUpdateRequest struct {
+	Name  string `json:"name" binding:"required"`
+	Email string `json:"email" binding:"required"`
+	Image string `json:"image,omitempty"`
+}
+
+type DeleteRequest struct {
+	Email      string `json:"email" binding:"required,email"`
+	SecretCode string `json:"secret_code" binding:"required"`
+}

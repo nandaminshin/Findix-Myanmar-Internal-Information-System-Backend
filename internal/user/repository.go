@@ -13,6 +13,7 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
+	Update(ctx context.Context, id primitive.ObjectID, user *User) error
 }
 
 type mongoUserRepository struct {
@@ -53,4 +54,13 @@ func (r *mongoUserRepository) FindByEmail(ctx context.Context, email string) (*U
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *mongoUserRepository) Update(ctx context.Context, id primitive.ObjectID, user *User) error {
+	_, err := r.collection.UpdateByID(ctx, id,
+		bson.M{
+			"$set": user,
+		},
+	)
+	return err
 }
