@@ -54,14 +54,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	c.SetCookie("jwt_token", res.Token, 24*3600, "/", "", true, true)
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":    res.ID,
-		"name":  res.Name,
-		"email": res.Email,
-		"role":  res.Role,
-		"phone": res.Phone,
-		"image": res.Image,
-	})
+	c.JSON(http.StatusOK, res)
 }
 
 func (h *UserHandler) Logout(c *gin.Context) {
@@ -89,13 +82,13 @@ func (h *UserHandler) GmUpdate(c *gin.Context) {
 	})
 }
 
-func (j *UserHandler) NormalUpdate(c *gin.Context) {
+func (h *UserHandler) NormalUpdate(c *gin.Context) {
 	var req NormalUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	res, err := j.service.NormalUpdate(c.Request.Context(), &req)
+	res, err := h.service.NormalUpdate(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -104,4 +97,21 @@ func (j *UserHandler) NormalUpdate(c *gin.Context) {
 		"name":  res.Name,
 		"image": res.Image,
 	})
+}
+
+func (h *UserHandler) GmDelete(c *gin.Context) {
+	userID := c.Param("id")
+
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		return
+	}
+
+	err := h.service.DeleteById(c, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }

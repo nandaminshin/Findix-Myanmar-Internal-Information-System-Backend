@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -17,6 +19,7 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GmUpdate(ctx context.Context, req *GmUpdateRequest) (*UserResponse, error)
 	NormalUpdate(ctx context.Context, req *NormalUpdateRequest) (*UserResponse, error)
+	DeleteById(ctx context.Context, userID string) error
 }
 
 type userService struct {
@@ -43,6 +46,14 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		return nil, errors.New("email already registered")
 	}
 
+	existingUserByEmpNo, err := s.repo.FindByEmpNo(ctx, req.EmpNumber)
+	if err != nil {
+		return nil, err
+	}
+	if existingUserByEmpNo != nil {
+		return nil, errors.New("employee number already registered")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -54,12 +65,38 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		role = "glob"
 	}
 
+	birthday, err := s.ParseDateTimeForDB(req.Birthday)
+	if err != nil {
+		return nil, err
+	}
+
+	dateOfHire, err := s.ParseDateTimeForDB(req.DateOfHire)
+	if err != nil {
+		return nil, err
+	}
+
+	dateOfRetirement, err := s.ParseDateTimeForDB(req.DateOfRetirement)
+	if err != nil {
+		return nil, err
+	}
+
 	user := &User{
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: string(hashedPassword),
-		Phone:    req.Phone,
-		Role:     role,
+		Name:             req.Name,
+		Email:            req.Email,
+		Password:         string(hashedPassword),
+		Phone:            req.Phone,
+		Role:             role,
+		EmpNumber:        req.EmpNumber,
+		Birthday:         birthday,
+		DateOfHire:       dateOfHire,
+		Salary:           req.Salary,
+		DateOfRetirement: dateOfRetirement,
+		NRC:              req.NRC,
+		GraduatedUni:     req.GraduatedUni,
+		Address:          req.Address,
+		ParentAddress:    req.ParentAddress,
+		ParentPhone:      req.ParentPhone,
+		Note:             req.Note,
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {
@@ -123,7 +160,13 @@ func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*User
 	if req.SecretCode != os.Getenv("SECRET_CODE") {
 		return nil, errors.New("access denied, invalid secret code")
 	}
-	user, err := s.repo.FindByEmail(ctx, req.Email)
+
+	objectID, err := primitive.ObjectIDFromHex(req.ID)
+	if err != nil {
+		return nil, errors.New("invalid user id")
+	}
+
+	user, err := s.repo.FindByID(ctx, objectID)
 	if err != nil {
 		return nil, err
 	}
@@ -131,30 +174,64 @@ func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*User
 		return nil, errors.New("user not found")
 	}
 
-	if req.Name != "" {
-		user.Name = req.Name
-	}
-
-	if req.Phone != "" {
-		user.Phone = req.Phone
-	}
-	if req.Role != "" {
-		user.Role = req.Role
-	}
-	if req.Image != "" {
-		user.Image = req.Image
-	}
-
-	// Optional: update password
-	if req.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if req.Email != user.Email {
+		otherUser, err := s.repo.FindByEmail(ctx, req.Email)
 		if err != nil {
 			return nil, err
 		}
-		user.Password = string(hashedPassword)
+		if otherUser != nil && otherUser.ID != user.ID {
+			return nil, errors.New("email already exists")
+		}
 	}
 
-	if err := s.repo.Update(ctx, user.ID, user); err != nil {
+	birthday, err := s.ParseDateTimeForDB(req.Birthday)
+	if err != nil {
+		return nil, err
+	}
+
+	dateOfHire, err := s.ParseDateTimeForDB(req.DateOfHire)
+	if err != nil {
+		return nil, err
+	}
+
+	dateOfRetirement, err := s.ParseDateTimeForDB(req.DateOfRetirement)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedUser := &User{
+		Name:             req.Name,
+		Email:            req.Email,
+		Phone:            req.Phone,
+		Role:             req.Role,
+		EmpNumber:        req.EmpNumber,
+		Birthday:         birthday,
+		DateOfHire:       dateOfHire,
+		Salary:           req.Salary,
+		DateOfRetirement: dateOfRetirement,
+		NRC:              req.NRC,
+		GraduatedUni:     req.GraduatedUni,
+		Address:          req.Address,
+		ParentAddress:    req.ParentAddress,
+		ParentPhone:      req.ParentPhone,
+		Note:             req.Note,
+	}
+
+	// Optional: update password
+	passwordErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if passwordErr == nil {
+		// password matches existing → not changed
+		updatedUser.Password = user.Password
+	} else {
+		// password changed → hash new one
+		hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+		updatedUser.Password = string(hashed)
+	}
+
+	if err := s.repo.Update(ctx, user.ID, updatedUser); err != nil {
 		return nil, err
 	}
 
@@ -170,7 +247,12 @@ func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*User
 }
 
 func (s *userService) NormalUpdate(ctx context.Context, req *NormalUpdateRequest) (*UserResponse, error) {
-	user, err := s.repo.FindByEmail(ctx, req.Email)
+	objectID, err := primitive.ObjectIDFromHex(req.ID)
+	if err != nil {
+		return nil, errors.New("invalid user id")
+	}
+
+	user, err := s.repo.FindByID(ctx, objectID)
 	if err != nil {
 		return nil, err
 	}
@@ -178,15 +260,12 @@ func (s *userService) NormalUpdate(ctx context.Context, req *NormalUpdateRequest
 		return nil, errors.New("user not found")
 	}
 
-	if req.Name != "" {
-		user.Name = req.Name
+	updatedUser := &User{
+		Name:  req.Name,
+		Image: req.Image,
 	}
 
-	if req.Image != "" {
-		user.Image = req.Image
-	}
-
-	if err := s.repo.Update(ctx, user.ID, user); err != nil {
+	if err := s.repo.Update(ctx, user.ID, updatedUser); err != nil {
 		return nil, err
 	}
 
@@ -199,4 +278,23 @@ func (s *userService) NormalUpdate(ctx context.Context, req *NormalUpdateRequest
 		Phone: user.Phone,
 		Image: user.Image,
 	}, nil
+}
+
+func (s *userService) DeleteById(ctx context.Context, userID string) error {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return errors.New("invalid user ID")
+	}
+
+	return s.repo.Delete(ctx, objID)
+}
+
+func (s *userService) ParseDateTimeForDB(dt string) (primitive.DateTime, error) {
+	t, err := time.Parse("02/01/2006", dt) //dd/mm/yy format date
+	if err != nil {
+		return 0, errors.New("invalid date format, expected dd/mm/yy")
+	}
+	// Convert to primitive.DateTime for MongoDB
+	dbDateTime := primitive.NewDateTimeFromTime(t)
+	return dbDateTime, nil
 }

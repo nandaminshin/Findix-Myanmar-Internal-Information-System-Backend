@@ -29,8 +29,8 @@ func NewNotificationRepository(db *mongo.Database) NotificationRepository {
 
 // SetupTTLIndex creates an index that automatically deletes notifications after 7 days
 func (r *mongoNotificationRepository) SetupTTLIndex(ctx context.Context) error {
-	// 7 days in seconds (7 * 24 * 60 * 60)
-	expireAfterSeconds := int32(2 * 60)
+	// 1 days in seconds (1 * 24 * 60 * 60)
+	expireAfterSeconds := int32(1 * 24 * 60 * 60)
 
 	indexModel := mongo.IndexModel{
 		Keys: bson.M{
