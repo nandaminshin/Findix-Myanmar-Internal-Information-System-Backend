@@ -25,6 +25,7 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 			protectedApi.POST("/gm-update", a.UserHandler.GmUpdate)
 			protectedApi.POST("/normal-update", a.UserHandler.NormalUpdate)
 			protectedApi.POST("/delete/:id", a.AuthMiddleware.RequireRole("gm"), a.UserHandler.GmDelete)
+			protectedApi.GET("/get-attendance-data")
 			// Other protected routes
 		}
 	}

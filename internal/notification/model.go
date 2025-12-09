@@ -11,10 +11,10 @@ import (
 type NotiType string
 
 const (
-	morning_meeting_noti   NotiType = "Morning Meeting"
-	dev_meeting_noti       NotiType = "Developer Meeting"
-	emergency_meeting_noti NotiType = "Emergency Meeting"
-	general_noti           NotiType = "General"
+	morningMeetingNnoti  NotiType = "Morning Meeting"
+	devMeetingNoti       NotiType = "Developer Meeting"
+	emergencyMeetingNoti NotiType = "Emergency Meeting"
+	generalNoti          NotiType = "General"
 )
 
 type Receiver struct {
