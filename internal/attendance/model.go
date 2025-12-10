@@ -14,11 +14,11 @@ const (
 )
 
 type Attendance struct {
-	ID               primitive.ObjectID `bson:"_id" json:"id"`
-	EmpID            primitive.ObjectID `bson:"emp_id" json:"emp_id"`
-	Date             primitive.DateTime `bson:"date" json:"date"`
-	AttendanceStatus AttendanceStatus   `bson:"attendance_status" json:"attendance_status"`
-	LeaveID          primitive.ObjectID `bson:"leave_id" json:"leave_id"`
-	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt        time.Time          `bson:"updated_at" json:"updated_at"`
+	ID               primitive.ObjectID  `bson:"_id" json:"id"`
+	EmpID            primitive.ObjectID  `bson:"emp_id" json:"emp_id"`
+	Date             primitive.DateTime  `bson:"date" json:"date"`
+	AttendanceStatus AttendanceStatus    `bson:"attendance_status" json:"attendance_status"`
+	LeaveID          *primitive.ObjectID `bson:"leave_id,omitempty" json:"leave_id,omitempty"`
+	CreatedAt        time.Time           `bson:"created_at" json:"created_at"`
+	UpdatedAt        time.Time           `bson:"updated_at" json:"updated_at"`
 }

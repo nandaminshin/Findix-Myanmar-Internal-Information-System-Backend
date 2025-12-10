@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"fmiis/internal/attendance"
 	"fmiis/internal/auth"
 	"fmiis/internal/common"
 	"fmiis/internal/config"
 	"fmiis/internal/database"
+	"fmiis/internal/leave"
 	"fmiis/internal/middleware"
 	"fmiis/internal/normal_email"
 	"fmiis/internal/notification"
@@ -24,6 +26,8 @@ type App struct {
 	NotificationHandler *notification.NotificationHandler
 	Utilities           *common.Utilities
 	NormalEmailService  normal_email.EmailService
+	AttendanceHandler   *attendance.AttendanceHandler
+	LeaveHandler        *leave.LeaveHandler
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -54,6 +58,14 @@ func (a *App) initModules() {
 	notificationService := notification.NewNotificationService(notificationRepo, *a.Utilities, a.NormalEmailService, userService)
 	a.NotificationHandler = notification.NewNotificationHandler(notificationService, userService)
 	setupTTLIndex(notificationRepo)
+
+	attendanceRepo := attendance.NewAttendanceRepository(a.DB.DB)
+	attendanceService := attendance.NewAttendanceService(attendanceRepo, *a.Utilities)
+	a.AttendanceHandler = attendance.NewAttendanceHandler(attendanceService)
+
+	leaveRepo := leave.NewLeaveRepository(a.DB.DB)
+	leaveService := leave.NewLeaveService(leaveRepo, *a.Utilities, attendanceRepo)
+	a.LeaveHandler = leave.NewLeaveHandler(leaveService)
 
 	// Placeholder for AuthHandler if needed separately, or remove if merged
 	a.AuthHandler = &auth.Handler{}

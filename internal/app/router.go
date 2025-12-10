@@ -19,12 +19,15 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 		protectedApi.Use(a.AuthMiddleware.Handle())
 		{
 			protectedApi.GET("/auth/me")
-			protectedApi.POST("/register", a.AuthMiddleware.RequireRole("gm"), a.UserHandler.Register)
+			protectedApi.POST("/register", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.Register)
 			protectedApi.POST("/send-notification", a.NotificationHandler.SendNotification)
 			protectedApi.POST("/logout", a.UserHandler.Logout)
-			protectedApi.POST("/gm-update", a.UserHandler.GmUpdate)
+			protectedApi.POST("/gm-update", a.AuthMiddleware.RequireRole("gm"), a.UserHandler.GmUpdate)
 			protectedApi.POST("/normal-update", a.UserHandler.NormalUpdate)
-			protectedApi.POST("/delete/:id", a.AuthMiddleware.RequireRole("gm"), a.UserHandler.GmDelete)
+			protectedApi.POST("/delete/:id", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.GmDelete)
+			protectedApi.POST("/add-attendance-record", a.AuthMiddleware.RequireRole("gm", "md"), a.AttendanceHandler.CreateAttendance)
+			protectedApi.POST("/request-leave", a.LeaveHandler.CreateLeaveRequest)
+			protectedApi.POST("/leave-request-approval", a.AuthMiddleware.RequireRole("gm"), a.LeaveHandler.LeaveRequestGmApproval)
 			protectedApi.GET("/get-attendance-data")
 			// Other protected routes
 		}

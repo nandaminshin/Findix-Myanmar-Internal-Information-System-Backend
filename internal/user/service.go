@@ -75,28 +75,30 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		return nil, err
 	}
 
-	dateOfRetirement, err := s.ParseDateTimeForDB(req.DateOfRetirement)
-	if err != nil {
-		return nil, err
+	user := &User{
+		Name:          req.Name,
+		Email:         req.Email,
+		Password:      string(hashedPassword),
+		Phone:         req.Phone,
+		Role:          role,
+		EmpNumber:     req.EmpNumber,
+		Birthday:      birthday,
+		DateOfHire:    dateOfHire,
+		Salary:        req.Salary,
+		NRC:           req.NRC,
+		GraduatedUni:  req.GraduatedUni,
+		Address:       req.Address,
+		ParentAddress: req.ParentAddress,
+		ParentPhone:   req.ParentPhone,
+		Note:          req.Note,
 	}
 
-	user := &User{
-		Name:             req.Name,
-		Email:            req.Email,
-		Password:         string(hashedPassword),
-		Phone:            req.Phone,
-		Role:             role,
-		EmpNumber:        req.EmpNumber,
-		Birthday:         birthday,
-		DateOfHire:       dateOfHire,
-		Salary:           req.Salary,
-		DateOfRetirement: dateOfRetirement,
-		NRC:              req.NRC,
-		GraduatedUni:     req.GraduatedUni,
-		Address:          req.Address,
-		ParentAddress:    req.ParentAddress,
-		ParentPhone:      req.ParentPhone,
-		Note:             req.Note,
+	if req.DateOfRetirement != "" {
+		dateOfRetirement, err := s.ParseDateTimeForDB(req.DateOfRetirement)
+		if err != nil {
+			return nil, err
+		}
+		user.DateOfRetirement = dateOfRetirement
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {
@@ -194,27 +196,29 @@ func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*User
 		return nil, err
 	}
 
-	dateOfRetirement, err := s.ParseDateTimeForDB(req.DateOfRetirement)
-	if err != nil {
-		return nil, err
+	updatedUser := &User{
+		Name:          req.Name,
+		Email:         req.Email,
+		Phone:         req.Phone,
+		Role:          req.Role,
+		EmpNumber:     req.EmpNumber,
+		Birthday:      birthday,
+		DateOfHire:    dateOfHire,
+		Salary:        req.Salary,
+		NRC:           req.NRC,
+		GraduatedUni:  req.GraduatedUni,
+		Address:       req.Address,
+		ParentAddress: req.ParentAddress,
+		ParentPhone:   req.ParentPhone,
+		Note:          req.Note,
 	}
 
-	updatedUser := &User{
-		Name:             req.Name,
-		Email:            req.Email,
-		Phone:            req.Phone,
-		Role:             req.Role,
-		EmpNumber:        req.EmpNumber,
-		Birthday:         birthday,
-		DateOfHire:       dateOfHire,
-		Salary:           req.Salary,
-		DateOfRetirement: dateOfRetirement,
-		NRC:              req.NRC,
-		GraduatedUni:     req.GraduatedUni,
-		Address:          req.Address,
-		ParentAddress:    req.ParentAddress,
-		ParentPhone:      req.ParentPhone,
-		Note:             req.Note,
+	if req.DateOfRetirement != "" {
+		dateOfRetirement, err := s.ParseDateTimeForDB(req.DateOfRetirement)
+		if err != nil {
+			return nil, err
+		}
+		updatedUser.DateOfRetirement = dateOfRetirement
 	}
 
 	// Optional: update password
@@ -290,7 +294,7 @@ func (s *userService) DeleteById(ctx context.Context, userID string) error {
 }
 
 func (s *userService) ParseDateTimeForDB(dt string) (primitive.DateTime, error) {
-	t, err := time.Parse("02/01/2006", dt) //dd/mm/yy format date
+	t, err := time.Parse("02/01/2006", dt) //dd/mm/yyyy format date
 	if err != nil {
 		return 0, errors.New("invalid date format, expected dd/mm/yy")
 	}

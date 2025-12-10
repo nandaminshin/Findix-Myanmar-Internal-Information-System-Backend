@@ -49,6 +49,6 @@ func (r *mongoNotificationRepository) Create(ctx context.Context, notification *
 	notification.ID = primitive.NewObjectID()
 	notification.CreatedAt = time.Now()
 	notification.UpdatedAt = time.Now()
-	_, err := r.collection.InsertOne(ctx, notification)
+	_, err := r.collection.InsertOne(ctx, &notification)
 	return err
 }

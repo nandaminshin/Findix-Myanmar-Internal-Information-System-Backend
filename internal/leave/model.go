@@ -9,9 +9,12 @@ import (
 type LeaveType string
 
 const (
-	fullDayLeave      LeaveType = "full day leave"
-	halfDayLeave      LeaveType = "half day leave"
-	unAuthorizedLeave LeaveType = "unauthorized leave"
+	morningMeetingLeave    LeaveType = "morning meeting leave"
+	developerMeetingLeave  LeaveType = "developer meeting leave"
+	globleTeamMeetingLeave LeaveType = "globle team meeting leave"
+	fullDayLeave           LeaveType = "full day leave"
+	halfDayLeave           LeaveType = "half day leave"
+	unAuthorizedLeave      LeaveType = "unauthorized leave"
 )
 
 type Status string

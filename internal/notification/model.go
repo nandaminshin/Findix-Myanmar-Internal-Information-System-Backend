@@ -14,6 +14,7 @@ const (
 	morningMeetingNnoti  NotiType = "Morning Meeting"
 	devMeetingNoti       NotiType = "Developer Meeting"
 	emergencyMeetingNoti NotiType = "Emergency Meeting"
+	internalMeetingNoti  NotiType = "Internal Meeting"
 	generalNoti          NotiType = "General"
 )
 
