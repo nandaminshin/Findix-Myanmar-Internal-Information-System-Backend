@@ -126,3 +126,20 @@ func (h *UserHandler) GetAllEmployees(c *gin.Context) {
 		"employees": res,
 	})
 }
+
+func (h *UserHandler) GetSingleEmployee(c *gin.Context) {
+	userID := c.Param("id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		return
+	}
+
+	res, err := h.service.GetSingleUser(c, userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"employee": res,
+	})
+}

@@ -4,6 +4,9 @@ import "github.com/gin-gonic/gin"
 
 // RegisterRoutes registers a minimal set of routes for the application.
 func RegisterRoutes(r *gin.Engine, a *App) {
+	// Mount socket server into Gin
+	r.GET("/socket.io/*any", gin.WrapH(a.SocketServer))
+	r.POST("/socket.io/*any", gin.WrapH(a.SocketServer))
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "FMIIS backend server is running"})
 	})
@@ -28,7 +31,8 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 			protectedApi.POST("/add-attendance-record", a.AuthMiddleware.RequireRole("gm", "md"), a.AttendanceHandler.CreateAttendance)
 			protectedApi.POST("/request-leave", a.LeaveHandler.CreateLeaveRequest)
 			protectedApi.POST("/leave-request-approval", a.AuthMiddleware.RequireRole("gm"), a.LeaveHandler.LeaveRequestGmApproval)
-			protectedApi.GET("/get-all-employees", a.AuthMiddleware.RequireRole("gm"), a.UserHandler.GetAllEmployees)
+			protectedApi.GET("/get-all-employees", a.AuthMiddleware.RequireRole("gm", "md", "hr"), a.UserHandler.GetAllEmployees)
+			protectedApi.GET("/get-single-employee/:id", a.AuthMiddleware.RequireRole("gm", "md", "hr"), a.UserHandler.GetSingleEmployee)
 			protectedApi.GET("/get-attendance-data")
 			// Other protected routes
 		}

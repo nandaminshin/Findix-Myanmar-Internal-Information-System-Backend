@@ -15,11 +15,14 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	socketio "github.com/googollee/go-socket.io"
 )
 
 type App struct {
 	Config              *config.Config
 	DB                  *database.MongoInstance
+	SocketServer        *socketio.Server
 	AuthHandler         *auth.Handler
 	UserHandler         *user.UserHandler
 	AuthMiddleware      middleware.AuthMiddleware
@@ -30,15 +33,16 @@ type App struct {
 	LeaveHandler        *leave.LeaveHandler
 }
 
-func NewApp(cfg *config.Config) (*App, error) {
+func NewApp(cfg *config.Config, server socketio.Server) (*App, error) {
 	db, err := database.ConnectMongo(cfg.MongoURI, cfg.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
 	a := &App{
-		Config: cfg,
-		DB:     db,
+		Config:       cfg,
+		DB:           db,
+		SocketServer: &server,
 	}
 	a.initModules()
 	return a, nil
@@ -48,7 +52,7 @@ func (a *App) initModules() {
 	// Initialize User module
 	userRepo := user.NewUserRepository(a.DB.DB)
 	authService := auth.NewAuthService()
-	userService := user.NewUserService(userRepo, authService)
+	userService := user.NewUserService(userRepo, authService, a.SocketServer)
 	a.Utilities = common.NewUtility(userService)
 	a.UserHandler = user.NewUserHandler(userService)
 	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)

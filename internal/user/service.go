@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	socketio "github.com/googollee/go-socket.io"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,18 +22,21 @@ type UserService interface {
 	GmUpdate(ctx context.Context, req *GmUpdateRequest) (*UserResponse, error)
 	NormalUpdate(ctx context.Context, req *NormalUpdateRequest) (*UserResponse, error)
 	GetAllUsers(ctx context.Context) (*[]User, error)
+	GetSingleUser(ctx context.Context, id string) (*User, error)
 	DeleteById(ctx context.Context, userID string) error
 }
 
 type userService struct {
-	repo        UserRepository
-	authService auth.AuthService
+	repo         UserRepository
+	authService  auth.AuthService
+	socketServer socketio.Server
 }
 
-func NewUserService(repo UserRepository, authService auth.AuthService) UserService {
+func NewUserService(repo UserRepository, authService auth.AuthService, server *socketio.Server) UserService {
 	return &userService{
-		repo:        repo,
-		authService: authService,
+		repo:         repo,
+		authService:  authService,
+		socketServer: *server,
 	}
 }
 
@@ -107,6 +112,14 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		return nil, err
 	}
 
+	s.socketServer.BroadcastToNamespace(
+		"/",
+		"employee_created",
+		gin.H{
+			"message": "New employee created",
+		},
+	)
+
 	return &UserResponse{
 		ID:    user.ID.Hex(),
 		Name:  user.Name,
@@ -169,17 +182,29 @@ func (s *userService) GetAllUsers(ctx context.Context) (*[]User, error) {
 	return fetchedUsers, err
 }
 
+func (s *userService) GetSingleUser(ctx context.Context, userID string) (*User, error) {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+	user, err := s.repo.FindByID(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*UserResponse, error) {
 	if req.SecretCode != os.Getenv("SECRET_CODE") {
 		return nil, errors.New("access denied, invalid secret code")
 	}
 
-	objectID, err := primitive.ObjectIDFromHex(req.ID)
+	objID, err := primitive.ObjectIDFromHex(req.ID)
 	if err != nil {
 		return nil, errors.New("invalid user id")
 	}
 
-	user, err := s.repo.FindByID(ctx, objectID)
+	user, err := s.repo.FindByID(ctx, objID)
 	if err != nil {
 		return nil, err
 	}
