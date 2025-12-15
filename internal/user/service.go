@@ -112,13 +112,18 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		return nil, err
 	}
 
-	s.socketServer.BroadcastToNamespace(
-		"/",
-		"employee_created",
-		gin.H{
-			"message": "New employee created",
-		},
-	)
+	// ... database creation ...
+
+	// WRAP THIS IN A GOROUTINE
+	go func() {
+		s.socketServer.BroadcastToNamespace(
+			"/",
+			"employee_created",
+			gin.H{
+				"message": "New employee created",
+			},
+		)
+	}()
 
 	return &UserResponse{
 		ID:    user.ID.Hex(),
