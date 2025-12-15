@@ -52,6 +52,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
+	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie("jwt_token", res.Token, 24*3600, "/", "", true, true)
 
 	c.JSON(http.StatusOK, res)
