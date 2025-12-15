@@ -16,6 +16,15 @@ const (
 	md   Role = "md"
 )
 
+type FamilyInfo struct {
+	Dad             bool  `bson:"dad" json:"dad"`
+	DadAllowance    bool  `bson:"dad_allowance" josn:"dad_allowance"`
+	Mom             bool  `bson:"mom" json:"mom"`
+	MomAllowance    bool  `bson:"mom_allowance" json:"mom_allowance"`
+	SpouseAllowance bool  `bson:"spouse_allowance" json:"spouse_allowance"`
+	Child           int16 `bson:"child" json:"child"`
+}
+
 type User struct {
 	ID               primitive.ObjectID `bson:"_id" json:"id"`
 	Name             string             `bson:"name" json:"name"`
@@ -32,8 +41,9 @@ type User struct {
 	NRC              string             `bson:"nrc" json:"nrc"`
 	GraduatedUni     string             `bson:"graduated_uni" json:"graduated_uni"`
 	Address          string             `bson:"address" json:"address"`
-	ParentAddress    string             `bson:"parent_address" json:"parent_address"`
-	ParentPhone      string             `bson:"parent_phone" json:"parent_phone"`
+	EmergencyAddress string             `bson:"emergency_address" json:"emergency_address"`
+	EmergencyPhone   string             `bson:"emergency_phone" json:"emergency_phone"`
+	FamilyInfo       FamilyInfo         `bson:"family_info" json:"family_info"`
 	Note             string             `bson:"note" json:"note"`
 	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt        time.Time          `bson:"updated_at" json:"updated_at"`

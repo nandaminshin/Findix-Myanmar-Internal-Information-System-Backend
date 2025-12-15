@@ -58,7 +58,7 @@ func (s *attendanceService) RecordAttendance(ctx context.Context, req *Attendanc
 	response := &AttendanceResponse{
 		ID:               attendance.ID.Hex(),
 		EmpID:            attendance.EmpID.Hex(),
-		Date:             attendance.Date.Time().Format("02/01/2006"),
+		Date:             attendance.Date.Time().Format("2006-01-02"),
 		AttendanceStatus: attendance.AttendanceStatus,
 	}
 

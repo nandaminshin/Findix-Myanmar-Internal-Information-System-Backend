@@ -8,7 +8,7 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 		c.JSON(200, gin.H{"message": "FMIIS backend server is running"})
 	})
 
-	api := r.Group("/api/v1")
+	api := r.Group("/api/fmiis-backend/v001")
 	{
 		// PUBLIC routes
 		api.POST("/login", a.UserHandler.Login)
@@ -22,12 +22,13 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 			protectedApi.POST("/register", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.Register)
 			protectedApi.POST("/send-notification", a.NotificationHandler.SendNotification)
 			protectedApi.POST("/logout", a.UserHandler.Logout)
-			protectedApi.POST("/gm-update", a.AuthMiddleware.RequireRole("gm"), a.UserHandler.GmUpdate)
+			protectedApi.POST("/gm-update", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.GmUpdate)
 			protectedApi.POST("/normal-update", a.UserHandler.NormalUpdate)
 			protectedApi.POST("/delete/:id", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.GmDelete)
 			protectedApi.POST("/add-attendance-record", a.AuthMiddleware.RequireRole("gm", "md"), a.AttendanceHandler.CreateAttendance)
 			protectedApi.POST("/request-leave", a.LeaveHandler.CreateLeaveRequest)
 			protectedApi.POST("/leave-request-approval", a.AuthMiddleware.RequireRole("gm"), a.LeaveHandler.LeaveRequestGmApproval)
+			protectedApi.GET("/get-all-employees", a.AuthMiddleware.RequireRole("gm"), a.UserHandler.GetAllEmployees)
 			protectedApi.GET("/get-attendance-data")
 			// Other protected routes
 		}

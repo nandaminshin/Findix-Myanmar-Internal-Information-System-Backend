@@ -28,9 +28,9 @@ func (u *Utilities) GetCurrentUser(ctx context.Context, email string) (*user.Use
 }
 
 func (u *Utilities) ParseDateTimeForDB(dt string) (*primitive.DateTime, error) {
-	t, err := time.Parse("02/01/2006", dt) //dd/mm/yyyy format date
+	t, err := time.Parse("2006-01-02", dt)
 	if err != nil {
-		return nil, errors.New("invalid date format, expected dd/mm/yy")
+		return nil, errors.New("invalid date format, expected dd-mm-yyyy")
 	}
 	// Convert to primitive.DateTime for MongoDB
 	dbDateTime := primitive.NewDateTimeFromTime(t)

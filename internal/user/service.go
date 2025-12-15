@@ -19,6 +19,7 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GmUpdate(ctx context.Context, req *GmUpdateRequest) (*UserResponse, error)
 	NormalUpdate(ctx context.Context, req *NormalUpdateRequest) (*UserResponse, error)
+	GetAllUsers(ctx context.Context) (*[]User, error)
 	DeleteById(ctx context.Context, userID string) error
 }
 
@@ -76,21 +77,22 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 	}
 
 	user := &User{
-		Name:          req.Name,
-		Email:         req.Email,
-		Password:      string(hashedPassword),
-		Phone:         req.Phone,
-		Role:          role,
-		EmpNumber:     req.EmpNumber,
-		Birthday:      birthday,
-		DateOfHire:    dateOfHire,
-		Salary:        req.Salary,
-		NRC:           req.NRC,
-		GraduatedUni:  req.GraduatedUni,
-		Address:       req.Address,
-		ParentAddress: req.ParentAddress,
-		ParentPhone:   req.ParentPhone,
-		Note:          req.Note,
+		Name:             req.Name,
+		Email:            req.Email,
+		Password:         string(hashedPassword),
+		Phone:            req.Phone,
+		Role:             role,
+		EmpNumber:        req.EmpNumber,
+		Birthday:         birthday,
+		DateOfHire:       dateOfHire,
+		Salary:           req.Salary,
+		NRC:              req.NRC,
+		GraduatedUni:     req.GraduatedUni,
+		Address:          req.Address,
+		EmergencyAddress: req.EmergencyAddress,
+		EmergencyPhone:   req.EmergencyPhone,
+		FamilyInfo:       req.FamilyInfo,
+		Note:             req.Note,
 	}
 
 	if req.DateOfRetirement != "" {
@@ -158,6 +160,15 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*User, 
 	return user, nil
 }
 
+func (s *userService) GetAllUsers(ctx context.Context) (*[]User, error) {
+	fetchedUsers, err := s.repo.FetchAllUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return fetchedUsers, err
+}
+
 func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*UserResponse, error) {
 	if req.SecretCode != os.Getenv("SECRET_CODE") {
 		return nil, errors.New("access denied, invalid secret code")
@@ -197,20 +208,21 @@ func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*User
 	}
 
 	updatedUser := &User{
-		Name:          req.Name,
-		Email:         req.Email,
-		Phone:         req.Phone,
-		Role:          req.Role,
-		EmpNumber:     req.EmpNumber,
-		Birthday:      birthday,
-		DateOfHire:    dateOfHire,
-		Salary:        req.Salary,
-		NRC:           req.NRC,
-		GraduatedUni:  req.GraduatedUni,
-		Address:       req.Address,
-		ParentAddress: req.ParentAddress,
-		ParentPhone:   req.ParentPhone,
-		Note:          req.Note,
+		Name:             req.Name,
+		Email:            req.Email,
+		Phone:            req.Phone,
+		Role:             req.Role,
+		EmpNumber:        req.EmpNumber,
+		Birthday:         birthday,
+		DateOfHire:       dateOfHire,
+		Salary:           req.Salary,
+		NRC:              req.NRC,
+		GraduatedUni:     req.GraduatedUni,
+		Address:          req.Address,
+		EmergencyAddress: req.EmergencyAddress,
+		EmergencyPhone:   req.EmergencyPhone,
+		FamilyInfo:       req.FamilyInfo,
+		Note:             req.Note,
 	}
 
 	if req.DateOfRetirement != "" {
@@ -294,9 +306,9 @@ func (s *userService) DeleteById(ctx context.Context, userID string) error {
 }
 
 func (s *userService) ParseDateTimeForDB(dt string) (primitive.DateTime, error) {
-	t, err := time.Parse("02/01/2006", dt) //dd/mm/yyyy format date
+	t, err := time.Parse("2006-01-02", dt)
 	if err != nil {
-		return 0, errors.New("invalid date format, expected dd/mm/yy")
+		return 0, errors.New("invalid date format, expected dd-mm-yy")
 	}
 	// Convert to primitive.DateTime for MongoDB
 	dbDateTime := primitive.NewDateTimeFromTime(t)

@@ -13,6 +13,7 @@ type NotiType string
 const (
 	morningMeetingNnoti  NotiType = "Morning Meeting"
 	devMeetingNoti       NotiType = "Developer Meeting"
+	kosugiMeeting        NotiType = "Kosugi Meeting"
 	emergencyMeetingNoti NotiType = "Emergency Meeting"
 	internalMeetingNoti  NotiType = "Internal Meeting"
 	generalNoti          NotiType = "General"

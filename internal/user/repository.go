@@ -16,6 +16,7 @@ type UserRepository interface {
 	FindByEmpNo(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, id primitive.ObjectID) (*User, error)
 	Update(ctx context.Context, id primitive.ObjectID, user *User) error
+	FetchAllUsers(ctx context.Context) (*[]User, error)
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
 
@@ -83,26 +84,50 @@ func (r *mongoUserRepository) FindByID(ctx context.Context, id primitive.ObjectI
 	return &user, nil
 }
 
+func (r *mongoUserRepository) FetchAllUsers(ctx context.Context) (*[]User, error) {
+	cursor, err := r.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []User
+	for cursor.Next(ctx) {
+		var user User
+		if err := cursor.Decode(&user); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return &users, nil
+}
+
 func (r *mongoUserRepository) Update(ctx context.Context, id primitive.ObjectID, u *User) error {
 	_, err := r.collection.UpdateByID(ctx, id,
 		bson.M{
 			"$set": bson.M{
-				"name":             u.Name,
-				"email":            u.Email,
-				"phone":            u.Phone,
-				"role":             u.Role,
-				"empNumber":        u.EmpNumber,
-				"birthday":         u.Birthday,
-				"dateOfHire":       u.DateOfHire,
-				"salary":           u.Salary,
-				"dateOfRetirement": u.DateOfRetirement,
-				"nrc":              u.NRC,
-				"graduatedUni":     u.GraduatedUni,
-				"address":          u.Address,
-				"parentAddress":    u.ParentAddress,
-				"parentPhone":      u.ParentPhone,
-				"note":             u.Note,
-				"password":         u.Password,
+				"name":               u.Name,
+				"email":              u.Email,
+				"phone":              u.Phone,
+				"role":               u.Role,
+				"emp_no":             u.EmpNumber,
+				"birthday":           u.Birthday,
+				"date_of_hire":       u.DateOfHire,
+				"salary":             u.Salary,
+				"date_of_retirement": u.DateOfRetirement,
+				"nrc":                u.NRC,
+				"graduated_uni":      u.GraduatedUni,
+				"address":            u.Address,
+				"emergency_address":  u.EmergencyAddress,
+				"emergency_phone":    u.EmergencyPhone,
+				"family_info":        u.FamilyInfo,
+				"note":               u.Note,
+				"password":           u.Password,
 			},
 		},
 	)

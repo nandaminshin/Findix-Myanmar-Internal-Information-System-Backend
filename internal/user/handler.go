@@ -115,3 +115,14 @@ func (h *UserHandler) GmDelete(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
+
+func (h *UserHandler) GetAllEmployees(c *gin.Context) {
+	res, err := h.service.GetAllUsers(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"employees": res,
+	})
+}
