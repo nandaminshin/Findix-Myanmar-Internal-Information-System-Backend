@@ -18,7 +18,7 @@ const (
 
 type FamilyInfo struct {
 	Dad             bool  `bson:"dad" json:"dad"`
-	DadAllowance    bool  `bson:"dad_allowance" josn:"dad_allowance"`
+	DadAllowance    bool  `bson:"dad_allowance" json:"dad_allowance"`
 	Mom             bool  `bson:"mom" json:"mom"`
 	MomAllowance    bool  `bson:"mom_allowance" json:"mom_allowance"`
 	SpouseAllowance bool  `bson:"spouse_allowance" json:"spouse_allowance"`
