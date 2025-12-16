@@ -27,7 +27,7 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 			protectedApi.POST("/logout", a.UserHandler.Logout)
 			protectedApi.POST("/gm-update", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.GmUpdate)
 			protectedApi.POST("/normal-update", a.UserHandler.NormalUpdate)
-			protectedApi.POST("/delete/:id", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.GmDelete)
+			protectedApi.DELETE("/delete/:id", a.AuthMiddleware.RequireRole("gm", "md"), a.UserHandler.GmDelete)
 			protectedApi.POST("/add-attendance-record", a.AuthMiddleware.RequireRole("gm", "md"), a.AttendanceHandler.CreateAttendance)
 			protectedApi.POST("/request-leave", a.LeaveHandler.CreateLeaveRequest)
 			protectedApi.POST("/leave-request-approval", a.AuthMiddleware.RequireRole("gm"), a.LeaveHandler.LeaveRequestGmApproval)

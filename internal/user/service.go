@@ -23,7 +23,7 @@ type UserService interface {
 	NormalUpdate(ctx context.Context, req *NormalUpdateRequest) (*UserResponse, error)
 	GetAllUsers(ctx context.Context) (*[]User, error)
 	GetSingleUser(ctx context.Context, id string) (*User, error)
-	DeleteById(ctx context.Context, userID string) error
+	DeleteById(ctx context.Context, userID string, secretCode string) error
 }
 
 type userService struct {
@@ -326,7 +326,11 @@ func (s *userService) NormalUpdate(ctx context.Context, req *NormalUpdateRequest
 	}, nil
 }
 
-func (s *userService) DeleteById(ctx context.Context, userID string) error {
+func (s *userService) DeleteById(ctx context.Context, userID string, secretCode string) error {
+	if secretCode != os.Getenv("SECRET_CODE") {
+		return errors.New("access denied, invalid secret code")
+	}
+
 	objID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.New("invalid user ID")

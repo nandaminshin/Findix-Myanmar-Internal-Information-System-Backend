@@ -66,5 +66,5 @@ type NormalUpdateRequest struct {
 }
 
 type DeleteRequest struct {
-	ID string `json:"id" binding:"required"`
+	SecretCode string `json:"secret_code" binding:"required"`
 }

@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,8 +22,6 @@ func (h *UserHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	fmt.Println(req)
 
 	res, err := h.service.Register(c.Request.Context(), &req)
 	if err != nil {
@@ -105,13 +102,18 @@ func (h *UserHandler) NormalUpdate(c *gin.Context) {
 
 func (h *UserHandler) GmDelete(c *gin.Context) {
 	userID := c.Param("id")
-
 	if userID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
 		return
 	}
 
-	err := h.service.DeleteById(c, userID)
+	var req DeleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.service.DeleteById(c, userID, req.SecretCode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
