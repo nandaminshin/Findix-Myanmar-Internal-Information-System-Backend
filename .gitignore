@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Uploads
+uploads/
+
 # Go binaries
 *.exe
 *.test

@@ -66,11 +66,22 @@ func (h *UserHandler) Logout(c *gin.Context) {
 
 func (h *UserHandler) GmUpdate(c *gin.Context) {
 	var req GmUpdateRequest
+	userID := c.Param("id")
+	user, err := h.service.GetSingleUser(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	authUserRole := c.MustGet("role").(string)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	res, err := h.service.GmUpdate(c.Request.Context(), &req)
+	if authUserRole == "hr" && (user.Role == "gm" || user.Role == "md") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to update this user"})
+		return
+	}
+	res, err := h.service.GmUpdate(c.Request.Context(), &req, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -86,11 +97,12 @@ func (h *UserHandler) GmUpdate(c *gin.Context) {
 
 func (h *UserHandler) NormalUpdate(c *gin.Context) {
 	var req NormalUpdateRequest
+	userID := c.Param("id")
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	res, err := h.service.NormalUpdate(c.Request.Context(), &req)
+	res, err := h.service.NormalUpdate(c.Request.Context(), &req, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

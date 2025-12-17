@@ -24,8 +24,8 @@ type UserService interface {
 	Register(ctx context.Context, req *RegisterRequest) (*UserResponse, error)
 	Login(ctx context.Context, req *LoginRequest) (*UserResponse, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	GmUpdate(ctx context.Context, req *GmUpdateRequest) (*UserResponse, error)
-	NormalUpdate(ctx context.Context, req *NormalUpdateRequest) (*UserResponse, error)
+	GmUpdate(ctx context.Context, req *GmUpdateRequest, userID string) (*UserResponse, error)
+	NormalUpdate(ctx context.Context, req *NormalUpdateRequest, userID string) (*UserResponse, error)
 	GetAllUsers(ctx context.Context) (*[]User, error)
 	GetSingleUser(ctx context.Context, id string) (*User, error)
 	DeleteById(ctx context.Context, userID string, secretCode string) error
@@ -208,12 +208,12 @@ func (s *userService) GetSingleUser(ctx context.Context, userID string) (*User, 
 	return user, nil
 }
 
-func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*UserResponse, error) {
+func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest, userID string) (*UserResponse, error) {
 	if req.SecretCode != os.Getenv("SECRET_CODE") {
 		return nil, errors.New("access denied, invalid secret code")
 	}
 
-	objID, err := primitive.ObjectIDFromHex(req.ID)
+	objID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errors.New("invalid user id")
 	}
@@ -301,8 +301,8 @@ func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest) (*User
 	}, nil
 }
 
-func (s *userService) NormalUpdate(ctx context.Context, req *NormalUpdateRequest) (*UserResponse, error) {
-	objectID, err := primitive.ObjectIDFromHex(req.ID)
+func (s *userService) NormalUpdate(ctx context.Context, req *NormalUpdateRequest, userID string) (*UserResponse, error) {
+	objectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errors.New("invalid user id")
 	}
