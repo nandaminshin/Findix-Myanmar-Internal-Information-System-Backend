@@ -108,30 +108,58 @@ func (r *mongoUserRepository) FetchAllUsers(ctx context.Context) (*[]User, error
 }
 
 func (r *mongoUserRepository) Update(ctx context.Context, id primitive.ObjectID, u *User) error {
-	_, err := r.collection.UpdateByID(ctx, id,
-		bson.M{
-			"$set": bson.M{
-				"name":               u.Name,
-				"email":              u.Email,
-				"phone":              u.Phone,
-				"role":               u.Role,
-				"emp_no":             u.EmpNumber,
-				"birthday":           u.Birthday,
-				"date_of_hire":       u.DateOfHire,
-				"salary":             u.Salary,
-				"date_of_retirement": u.DateOfRetirement,
-				"nrc":                u.NRC,
-				"graduated_uni":      u.GraduatedUni,
-				"address":            u.Address,
-				"emergency_address":  u.EmergencyAddress,
-				"emergency_phone":    u.EmergencyPhone,
-				"family_info":        u.FamilyInfo,
-				"note":               u.Note,
-				"password":           u.Password,
+	if u.Image != "" {
+		_, err := r.collection.UpdateByID(ctx, id,
+			bson.M{
+				"$set": bson.M{
+					"name":               u.Name,
+					"email":              u.Email,
+					"image":              u.Image,
+					"phone":              u.Phone,
+					"role":               u.Role,
+					"emp_no":             u.EmpNumber,
+					"birthday":           u.Birthday,
+					"date_of_hire":       u.DateOfHire,
+					"salary":             u.Salary,
+					"date_of_retirement": u.DateOfRetirement,
+					"nrc":                u.NRC,
+					"graduated_uni":      u.GraduatedUni,
+					"address":            u.Address,
+					"emergency_address":  u.EmergencyAddress,
+					"emergency_phone":    u.EmergencyPhone,
+					"family_info":        u.FamilyInfo,
+					"note":               u.Note,
+					"password":           u.Password,
+				},
 			},
-		},
-	)
-	return err
+		)
+		return err
+	} else {
+		_, err := r.collection.UpdateByID(ctx, id,
+			bson.M{
+				"$set": bson.M{
+					"name":               u.Name,
+					"email":              u.Email,
+					"phone":              u.Phone,
+					"role":               u.Role,
+					"emp_no":             u.EmpNumber,
+					"birthday":           u.Birthday,
+					"date_of_hire":       u.DateOfHire,
+					"salary":             u.Salary,
+					"date_of_retirement": u.DateOfRetirement,
+					"nrc":                u.NRC,
+					"graduated_uni":      u.GraduatedUni,
+					"address":            u.Address,
+					"emergency_address":  u.EmergencyAddress,
+					"emergency_phone":    u.EmergencyPhone,
+					"family_info":        u.FamilyInfo,
+					"note":               u.Note,
+					"password":           u.Password,
+				},
+			},
+		)
+		return err
+	}
 }
 
 func (r *mongoUserRepository) Delete(ctx context.Context, id primitive.ObjectID) error {

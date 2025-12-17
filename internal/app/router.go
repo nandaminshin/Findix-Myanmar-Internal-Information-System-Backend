@@ -11,6 +11,9 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 		c.JSON(200, gin.H{"message": "FMIIS backend server is running"})
 	})
 
+	// Serve static files
+	r.Static("/uploads", a.UploadBaseDir)
+
 	api := r.Group("/api/fmiis-backend/v001")
 	{
 		// PUBLIC routes
@@ -33,6 +36,7 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 			protectedApi.POST("/leave-request-approval", a.AuthMiddleware.RequireRole("gm"), a.LeaveHandler.LeaveRequestGmApproval)
 			protectedApi.GET("/get-all-employees", a.AuthMiddleware.RequireRole("gm", "md", "hr"), a.UserHandler.GetAllEmployees)
 			protectedApi.GET("/get-single-employee/:id", a.AuthMiddleware.RequireRole("gm", "md", "hr"), a.UserHandler.GetSingleEmployee)
+			protectedApi.POST("/upload-avatar/:id", a.UserHandler.UploadProfileImage)
 			protectedApi.GET("/get-attendance-data")
 			// Other protected routes
 		}

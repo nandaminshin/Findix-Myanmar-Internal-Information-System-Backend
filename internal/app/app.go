@@ -23,6 +23,7 @@ type App struct {
 	Config              *config.Config
 	DB                  *database.MongoInstance
 	SocketServer        *socketio.Server
+	UploadBaseDir       string
 	AuthHandler         *auth.Handler
 	UserHandler         *user.UserHandler
 	AuthMiddleware      middleware.AuthMiddleware
@@ -33,16 +34,17 @@ type App struct {
 	LeaveHandler        *leave.LeaveHandler
 }
 
-func NewApp(cfg *config.Config, server socketio.Server) (*App, error) {
+func NewApp(cfg *config.Config, server socketio.Server, uploadBaseDir string) (*App, error) {
 	db, err := database.ConnectMongo(cfg.MongoURI, cfg.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
 	a := &App{
-		Config:       cfg,
-		DB:           db,
-		SocketServer: &server,
+		Config:        cfg,
+		DB:            db,
+		SocketServer:  &server,
+		UploadBaseDir: uploadBaseDir,
 	}
 	a.initModules()
 	return a, nil
@@ -52,7 +54,7 @@ func (a *App) initModules() {
 	// Initialize User module
 	userRepo := user.NewUserRepository(a.DB.DB)
 	authService := auth.NewAuthService()
-	userService := user.NewUserService(userRepo, authService, a.SocketServer)
+	userService := user.NewUserService(userRepo, authService, a.SocketServer, a.UploadBaseDir)
 	a.Utilities = common.NewUtility(userService)
 	a.UserHandler = user.NewUserHandler(userService)
 	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)

@@ -2,6 +2,7 @@ package user
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -147,5 +148,36 @@ func (h *UserHandler) GetSingleEmployee(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"employee": res,
+	})
+}
+
+func (h *UserHandler) UploadProfileImage(c *gin.Context) {
+	file, err := c.FormFile("profile_image")
+	if err != nil {
+		c.JSON(400, gin.H{"error": "profile_picture is required"})
+		return
+	}
+
+	userID := c.Param("id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		return
+	}
+
+	// Call the unified service method
+	res, err := h.service.UpdateProfileImage(c.Request.Context(), userID, file)
+	if err != nil {
+		code := http.StatusInternalServerError
+		if err.Error() == "user not found" || err.Error() == "file size too large" || strings.Contains(err.Error(), "file type not allowed") || strings.Contains(err.Error(), "invalid image type") {
+			code = http.StatusBadRequest
+		}
+		c.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"updated_employee": res,
+		"message":          "upload success",
+		"path":             res.Image,
 	})
 }

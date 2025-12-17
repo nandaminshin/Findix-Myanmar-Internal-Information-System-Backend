@@ -5,6 +5,8 @@ import (
 	"fmiis/internal/config"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/googollee/go-socket.io/engineio"
@@ -54,7 +56,18 @@ func main() {
 
 	/* ----------------------------------------------------------- */
 
-	application, err := app.NewApp(cfg, *server)
+	// Create uploads directory
+	//Get project root (where main.go is)
+	projectRoot, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	uploadBaseDir := filepath.Join(projectRoot, "uploads")
+	// Or if running from project root directly:
+	// uploadBaseDir := filepath.Join(projectRoot, "uploads")
+
+	application, err := app.NewApp(cfg, *server, uploadBaseDir)
 	if err != nil {
 		log.Fatal("Failed to initialize app:", err)
 	}
