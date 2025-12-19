@@ -32,7 +32,7 @@ func NewUserRepository(db *mongo.Database) UserRepository {
 
 func IsValidRole(role Role) bool {
 	switch role {
-	case "dev", "glob", "hr", "gm", "md":
+	case Dev, Glob, Hr, Gm, Md:
 		return true
 	default:
 		return false

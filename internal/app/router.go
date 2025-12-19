@@ -37,7 +37,9 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 			protectedApi.GET("/get-all-employees", a.AuthMiddleware.RequireRole("gm", "md", "hr"), a.UserHandler.GetAllEmployees)
 			protectedApi.GET("/get-single-employee/:id", a.AuthMiddleware.RequireRole("gm", "md", "hr"), a.UserHandler.GetSingleEmployee)
 			protectedApi.POST("/upload-avatar/:id", a.UserHandler.UploadProfileImage)
-			protectedApi.GET("/get-attendance-data")
+			// protectedApi.GET("/get-attendance-data", a.AuthMiddleware.RequireRole("gm", "md", "hr"), a.AttendanceHandler.GetAllAttendanceData)
+			protectedApi.GET("/get-all-notifications/:id", a.NotificationHandler.GetAllNotificationsByReceiver)
+			protectedApi.GET("/get-single-notification/:id", a.NotificationHandler.GetSingleNotification)
 			// Other protected routes
 		}
 	}

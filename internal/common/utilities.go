@@ -27,6 +27,14 @@ func (u *Utilities) GetCurrentUser(ctx context.Context, email string) (*user.Use
 	return user, nil
 }
 
+func (u *Utilities) GetCurrentUserByID(ctx context.Context, id string) (*user.User, error) {
+	user, err := u.userService.GetUserByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (u *Utilities) ParseDateTimeForDB(dt string) (*primitive.DateTime, error) {
 	t, err := time.Parse("2006-01-02", dt)
 	if err != nil {

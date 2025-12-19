@@ -13,7 +13,8 @@ import (
 type NotificationRepository interface {
 	Create(ctx context.Context, notification *Notification) error
 	SetupTTLIndex(ctx context.Context) error
-	// FindByReceiver(ctx context.Context, receiverID primitive.ObjectID) ([]*Notification, error)
+	FindAllByReceiver(ctx context.Context, receiverID primitive.ObjectID) ([]Notification, error)
+	FindByID(ctx context.Context, id primitive.ObjectID) (*Notification, error)
 	// FindBySender(ctx context.Context, senderID primitive.ObjectID) ([]*Notification, error)
 }
 
@@ -51,4 +52,34 @@ func (r *mongoNotificationRepository) Create(ctx context.Context, notification *
 	notification.UpdatedAt = time.Now()
 	_, err := r.collection.InsertOne(ctx, &notification)
 	return err
+}
+
+func (r *mongoNotificationRepository) FindAllByReceiver(ctx context.Context, receiverID primitive.ObjectID) ([]Notification, error) {
+	opt := options.Find().SetSort(bson.M{
+		"created_at": -1,
+	})
+	cursor, err := r.collection.Find(ctx, bson.M{
+		"receivers.id": receiverID,
+	}, opt)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var notifications []Notification
+	if err := cursor.All(ctx, &notifications); err != nil {
+		return nil, err
+	}
+	return notifications, nil
+}
+
+func (r *mongoNotificationRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*Notification, error) {
+	res := &Notification{}
+	err := r.collection.FindOne(ctx, bson.M{
+		"_id": id,
+	}).Decode(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

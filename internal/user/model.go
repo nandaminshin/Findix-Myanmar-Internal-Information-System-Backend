@@ -9,11 +9,11 @@ import (
 type Role string
 
 const (
-	dev  Role = "dev"
-	glob Role = "glob"
-	hr   Role = "hr"
-	gm   Role = "gm"
-	md   Role = "md"
+	Dev  Role = "dev"
+	Glob Role = "glob"
+	Hr   Role = "hr"
+	Gm   Role = "gm"
+	Md   Role = "md"
 )
 
 type FamilyInfo struct {

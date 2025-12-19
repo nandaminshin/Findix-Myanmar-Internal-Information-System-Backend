@@ -10,16 +10,20 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type NotificationService interface {
 	SendNotification(ctx context.Context, req *NotificationRequest) (*NotificationResponse, error)
 	SendEmailNotificationForAllReceivers(receiver []Receiver, notification *NotificationResponse) error
-	FetchCurrentUser(ctx context.Context, email string) (*user.User, error)
-	FetchReceivers(ctx context.Context, receivers []Receiver) ([]Receiver, error)
+	ListCurrentUser(ctx context.Context, email string) (*user.User, error)
+	ListReceivers(ctx context.Context, receivers []Receiver) ([]Receiver, error)
 	FormatNotificationHTML(notification NotificationResponse) (string, string)
 	formatSenderPhone(phone string) string
 	formatEditedTime(createdAt, updatedAt time.Time) string
+	ListAllNotificationsByReceiver(ctx context.Context, userID string) ([]NotificationResponse, error)
+	GetNotificationByID(ctx context.Context, notiID string) (*NotificationResponse, error)
 }
 
 type notificationService struct {
@@ -38,7 +42,7 @@ func NewNotificationService(repo NotificationRepository, utilities common.Utilit
 	}
 }
 
-func (s *notificationService) FetchCurrentUser(ctx context.Context, email string) (*user.User, error) {
+func (s *notificationService) ListCurrentUser(ctx context.Context, email string) (*user.User, error) {
 	sender, err := s.utilities.GetCurrentUser(ctx, email)
 	if err != nil {
 		return nil, err
@@ -46,7 +50,7 @@ func (s *notificationService) FetchCurrentUser(ctx context.Context, email string
 	return sender, nil
 }
 
-func (s *notificationService) FetchReceivers(ctx context.Context, receivers []Receiver) ([]Receiver, error) {
+func (s *notificationService) ListReceivers(ctx context.Context, receivers []Receiver) ([]Receiver, error) {
 	// fetch receiver by receiver email
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -108,6 +112,7 @@ func (s *notificationService) SendNotification(ctx context.Context, req *Notific
 	}
 
 	return &NotificationResponse{
+		ID:        notification.ID.Hex(),
 		NotiType:  notification.NotiType,
 		Sender:    notification.Sender,
 		Receivers: notification.Receivers,
@@ -154,61 +159,61 @@ func (s *notificationService) FormatNotificationHTML(notification NotificationRe
 	subject := fmt.Sprintf("🔔 %s  - FMIIS", notification.NotiType)
 
 	htmlContent := fmt.Sprintf(`
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background: #f5f5f5; }
-        .container { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px auto; }
-        .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; }
-        .content { padding: 30px; }
-        .notification-type { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #2c3e50; }
-        .message-box { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0; }
-        .info-box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef; margin: 20px 0; }
-        .timestamp { color: #6c757d; font-size: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; }
-        .badge { display: inline-block; background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; color: #6c757d; font-size: 12px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1 style="margin: 0; font-size: 28px;">🔔 Findix Myanmar Internal Information System</h1>
-            <p style="margin: 5px 0 0 0; opacity: 0.9;">Email Notification System</p>
-        </div>
-        
-        <div class="content">
-            <div class="notification-type">%s Notification</div>
-            
-            <div class="message-box">
-                <h3 style="margin-top: 0; color: #2c3e50;">📝 Message</h3>
-                <p style="margin: 0; font-size: 16px; line-height: 1.5;">%s</p>
-            </div>
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<style>
+				body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background: #f5f5f5; }
+				.container { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px auto; }
+				.header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; }
+				.content { padding: 30px; }
+				.notification-type { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #2c3e50; }
+				.message-box { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0; }
+				.info-box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef; margin: 20px 0; }
+				.timestamp { color: #6c757d; font-size: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; }
+				.badge { display: inline-block; background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+				.footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; color: #6c757d; font-size: 12px; }
+			</style>
+		</head>
+		<body>
+			<div class="container">
+				<div class="header">
+					<h1 style="margin: 0; font-size: 28px;">🔔 Findix Myanmar Internal Information System</h1>
+					<p style="margin: 5px 0 0 0; opacity: 0.9;">Email Notification System</p>
+				</div>
+				
+				<div class="content">
+					<div class="notification-type">%s Notification</div>
+					
+					<div class="message-box">
+						<h3 style="margin-top: 0; color: #2c3e50;">📝 Message</h3>
+						<p style="margin: 0; font-size: 16px; line-height: 1.5;">%s</p>
+					</div>
 
-            <div class="info-box">
-                <h3 style="margin-top: 0; color: #2c3e50;">👤 From</h3>
-                <table style="width: 100%%; border-collapse: collapse;">
-                    <tr><td style="padding: 8px 0; width: 80px;"><strong>Name:</strong></td><td style="padding: 8px 0;">%s</td></tr>
-                    <tr><td style="padding: 8px 0;"><strong>Role:</strong></td><td style="padding: 8px 0;"><span class="badge">%s</span></td></tr>
-                    <tr><td style="padding: 8px 0;"><strong>Email:</strong></td><td style="padding: 8px 0;">%s</td></tr>
-                    %s
-                </table>
-            </div>
+					<div class="info-box">
+						<h3 style="margin-top: 0; color: #2c3e50;">👤 From</h3>
+						<table style="width: 100%%; border-collapse: collapse;">
+							<tr><td style="padding: 8px 0; width: 80px;"><strong>Name:</strong></td><td style="padding: 8px 0;">%s</td></tr>
+							<tr><td style="padding: 8px 0;"><strong>Role:</strong></td><td style="padding: 8px 0;"><span class="badge">%s</span></td></tr>
+							<tr><td style="padding: 8px 0;"><strong>Email:</strong></td><td style="padding: 8px 0;">%s</td></tr>
+							%s
+						</table>
+					</div>
 
-            <div class="timestamp">
-                <p style="margin: 5px 0;"><strong>🕒 Sent:</strong> %s</p>
-                %s
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p style="margin: 0;">This is an automated notification from Findix FMIIS System</p>
-            <p style="margin: 5px 0;">© %d Findix Myanmar. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-</html>`,
+					<div class="timestamp">
+						<p style="margin: 5px 0;"><strong>🕒 Sent:</strong> %s</p>
+						%s
+					</div>
+				</div>
+				
+				<div class="footer">
+					<p style="margin: 0;">This is an automated notification from Findix FMIIS System</p>
+					<p style="margin: 5px 0;">© %d Findix Myanmar. All rights reserved.</p>
+				</div>
+			</div>
+		</body>
+		</html>`,
 		// Notification type
 		notification.NotiType,
 
@@ -274,4 +279,70 @@ func (s *notificationService) SendEmailNotification(receiverEmail, receiverName 
 		log.Printf("✅ Email sent successfully to %s", receiverEmail)
 		return nil
 	}
+}
+
+func (s *notificationService) ListAllNotificationsByReceiver(ctx context.Context, userID string) ([]NotificationResponse, error) {
+	if userID == "" {
+		return nil, fmt.Errorf("user ID cannot be empty")
+	}
+
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.repo.FindAllByReceiver(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
+	if len(res) == 0 {
+		fmt.Println("No notifications found for receiver")
+		return nil, nil
+	}
+
+	var notifications []NotificationResponse
+	for _, notification := range res {
+		notifications = append(notifications, NotificationResponse{
+			ID:        notification.ID.Hex(),
+			NotiType:  notification.NotiType,
+			Sender:    notification.Sender,
+			Receivers: notification.Receivers,
+			Content:   notification.Content,
+			IsSeen:    notification.IsSeen,
+			CreatedAt: notification.CreatedAt,
+			UpdatedAt: notification.UpdatedAt,
+		})
+	}
+	return notifications, nil
+}
+
+func (s *notificationService) GetNotificationByID(ctx context.Context, notiID string) (*NotificationResponse, error) {
+	if notiID == "" {
+		return nil, fmt.Errorf("notification ID cannot be empty")
+	}
+
+	objID, err := primitive.ObjectIDFromHex(notiID)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.repo.FindByID(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		fmt.Println("Notification not found")
+		return nil, nil
+	}
+
+	return &NotificationResponse{
+		ID:        res.ID.Hex(),
+		NotiType:  res.NotiType,
+		Sender:    res.Sender,
+		Receivers: res.Receivers,
+		Content:   res.Content,
+		IsSeen:    res.IsSeen,
+		CreatedAt: res.CreatedAt,
+		UpdatedAt: res.UpdatedAt,
+	}, nil
 }

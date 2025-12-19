@@ -24,6 +24,7 @@ type UserService interface {
 	Register(ctx context.Context, req *RegisterRequest) (*UserResponse, error)
 	Login(ctx context.Context, req *LoginRequest) (*UserResponse, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, id string) (*User, error)
 	GmUpdate(ctx context.Context, req *GmUpdateRequest, userID string) (*UserResponse, error)
 	NormalUpdate(ctx context.Context, req *NormalUpdateRequest, userID string) (*UserResponse, error)
 	GetAllUsers(ctx context.Context) (*[]User, error)
@@ -76,7 +77,7 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 	// Default role to "user" if not provided
 	role := req.Role
 	if role == "" {
-		role = "glob"
+		role = Glob
 	}
 
 	birthday, err := s.ParseDateTimeForDB(req.Birthday)
@@ -184,6 +185,21 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*User, 
 		return nil, err
 	}
 
+	return user, nil
+}
+
+func (s *userService) GetUserByID(ctx context.Context, id string) (*User, error) {
+	if id == "" {
+		return nil, fmt.Errorf("id cannot be empty")
+	}
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+	user, err := s.repo.FindByID(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 
