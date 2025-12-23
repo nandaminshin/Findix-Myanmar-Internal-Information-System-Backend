@@ -2,6 +2,7 @@ package notification
 
 import (
 	"context"
+	"errors"
 	"fmiis/internal/common"
 	"fmiis/internal/normal_email"
 	"fmiis/internal/user"
@@ -24,6 +25,7 @@ type NotificationService interface {
 	formatEditedTime(createdAt, updatedAt time.Time) string
 	ListAllNotificationsByReceiver(ctx context.Context, userID string) ([]NotificationResponse, error)
 	GetNotificationByID(ctx context.Context, notiID string) (*NotificationResponse, error)
+	MarkNotificationAsSeenByEmail(ctx context.Context, notiID string, email string) (*NotificationResponse, error)
 }
 
 type notificationService struct {
@@ -84,7 +86,6 @@ func (s *notificationService) ListReceivers(ctx context.Context, receivers []Rec
 
 			mu.Lock()
 			fetchedReceivers = append(fetchedReceivers, Receiver{
-				ID:    receiverUser.ID,
 				Name:  receiverUser.Name,
 				Email: receiverUser.Email,
 			})
@@ -104,7 +105,6 @@ func (s *notificationService) SendNotification(ctx context.Context, req *Notific
 		Sender:    req.Sender,
 		Receivers: req.Receivers,
 		Content:   req.Content,
-		IsSeen:    false,
 	}
 
 	if err := s.repo.Create(ctx, notification); err != nil {
@@ -117,7 +117,6 @@ func (s *notificationService) SendNotification(ctx context.Context, req *Notific
 		Sender:    notification.Sender,
 		Receivers: notification.Receivers,
 		Content:   notification.Content,
-		IsSeen:    notification.IsSeen,
 		CreatedAt: notification.CreatedAt,
 		UpdatedAt: notification.UpdatedAt,
 	}, nil
@@ -281,17 +280,12 @@ func (s *notificationService) SendEmailNotification(receiverEmail, receiverName 
 	}
 }
 
-func (s *notificationService) ListAllNotificationsByReceiver(ctx context.Context, userID string) ([]NotificationResponse, error) {
-	if userID == "" {
-		return nil, fmt.Errorf("user ID cannot be empty")
+func (s *notificationService) ListAllNotificationsByReceiver(ctx context.Context, email string) ([]NotificationResponse, error) {
+	if email == "" {
+		return nil, fmt.Errorf("email cannot be empty")
 	}
 
-	objID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := s.repo.FindAllByReceiver(ctx, objID)
+	res, err := s.repo.FindAllByReceiver(ctx, email)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +302,6 @@ func (s *notificationService) ListAllNotificationsByReceiver(ctx context.Context
 			Sender:    notification.Sender,
 			Receivers: notification.Receivers,
 			Content:   notification.Content,
-			IsSeen:    notification.IsSeen,
 			CreatedAt: notification.CreatedAt,
 			UpdatedAt: notification.UpdatedAt,
 		})
@@ -341,8 +334,47 @@ func (s *notificationService) GetNotificationByID(ctx context.Context, notiID st
 		Sender:    res.Sender,
 		Receivers: res.Receivers,
 		Content:   res.Content,
-		IsSeen:    res.IsSeen,
 		CreatedAt: res.CreatedAt,
 		UpdatedAt: res.UpdatedAt,
+	}, nil
+}
+
+func (s *notificationService) MarkNotificationAsSeenByEmail(ctx context.Context, notiID string, email string) (*NotificationResponse, error) {
+	if notiID == "" {
+		return nil, errors.New("notification ID cannot be empty")
+	}
+
+	objID, err := primitive.ObjectIDFromHex(notiID)
+	if err != nil {
+		return nil, err
+	}
+
+	noti, err := s.repo.FindByID(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
+	if noti == nil {
+		fmt.Println("Notification not found")
+		return nil, nil
+	}
+
+	for i, receiver := range noti.Receivers {
+		if receiver.Email == email {
+			noti.Receivers[i].IsSeen = true
+		}
+	}
+	dberr := s.repo.UpdateByID(ctx, objID, noti)
+	if dberr != nil {
+		return nil, dberr
+	}
+
+	return &NotificationResponse{
+		ID:        noti.ID.Hex(),
+		NotiType:  noti.NotiType,
+		Sender:    noti.Sender,
+		Receivers: noti.Receivers,
+		Content:   noti.Content,
+		CreatedAt: noti.CreatedAt,
+		UpdatedAt: noti.UpdatedAt,
 	}, nil
 }

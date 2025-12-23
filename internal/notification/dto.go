@@ -9,7 +9,6 @@ type NotificationRequest struct {
 	Sender    Sender     `json:"sender" binding:"required"`
 	Receivers []Receiver `json:"receivers" binding:"required"`
 	Content   string     `json:"content" binding:"required"`
-	IsSeen    bool       `json:"is_seen"`
 }
 
 type NotificationResponse struct {
@@ -18,7 +17,6 @@ type NotificationResponse struct {
 	Sender    Sender     `json:"sender"`
 	Receivers []Receiver `json:"receivers"`
 	Content   string     `json:"content"`
-	IsSeen    bool       `json:"is_seen"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 }

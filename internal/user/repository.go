@@ -43,6 +43,9 @@ func (r *mongoUserRepository) Create(ctx context.Context, user *User) error {
 	user.ID = primitive.NewObjectID()
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
+	if !IsValidRole(user.Role) {
+		return errors.New("invalid role")
+	}
 
 	_, err := r.collection.InsertOne(ctx, &user)
 	return err
@@ -108,6 +111,10 @@ func (r *mongoUserRepository) FetchAllUsers(ctx context.Context) (*[]User, error
 }
 
 func (r *mongoUserRepository) Update(ctx context.Context, id primitive.ObjectID, u *User) error {
+	if !IsValidRole(u.Role) {
+		return errors.New("invalid role")
+	}
+
 	if u.Image != "" {
 		_, err := r.collection.UpdateByID(ctx, id,
 			bson.M{

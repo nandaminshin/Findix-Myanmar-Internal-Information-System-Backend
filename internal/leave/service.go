@@ -29,7 +29,32 @@ func NewLeaveService(repo LeaveRepository, u common.Utilities, attRepo attendanc
 	}
 }
 
+func IsValidLeaveType(leaveType LeaveType) bool {
+	switch leaveType {
+	case morningMeetingLeave, developerMeetingLeave, globleTeamMeetingLeave, fullDayLeave, halfDayLeave, unAuthorizedLeave:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsValidLeaveStatus(status Status) bool {
+	switch status {
+	case pending, approved, rejected:
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *leaveService) RecordLeaveRequest(ctx context.Context, req *LeaveRequest) (*LeaveResponse, error) {
+	if !IsValidLeaveType(req.LeaveType) {
+		return nil, errors.New("invalid leave type")
+	}
+	if !IsValidLeaveStatus(req.Status) {
+		return nil, errors.New("invalid leave status")
+	}
+
 	EmpObjID, err := s.utilities.ParseObjectIDForDB(req.EmpID)
 	if err != nil {
 		return nil, err
@@ -81,6 +106,10 @@ func (s *leaveService) RecordLeaveRequest(ctx context.Context, req *LeaveRequest
 }
 
 func (s *leaveService) GmApproval(ctx context.Context, req *GmApprovalRequest) (*GmApprovalRespnse, error) {
+	if !IsValidLeaveStatus(req.Status) {
+		return nil, errors.New("invalid leave status")
+	}
+
 	leaveObjID, err := s.utilities.ParseObjectIDForDB(req.ID)
 	if err != nil {
 		return nil, err
@@ -88,11 +117,6 @@ func (s *leaveService) GmApproval(ctx context.Context, req *GmApprovalRequest) (
 	leave, err := s.repo.FindByID(ctx, *leaveObjID)
 	if err != nil {
 		return nil, err
-	}
-
-	// Validate request status
-	if req.Status != "approved" && req.Status != "rejected" {
-		return nil, errors.New("invalid leave status")
 	}
 
 	leave.Status = req.Status
@@ -113,7 +137,6 @@ func (s *leaveService) GmApproval(ctx context.Context, req *GmApprovalRequest) (
 
 			att := &attendance.Attendance{
 				ID:               primitive.NewObjectID(),
-				EmpID:            leave.EmpID,
 				Date:             primitive.NewDateTimeFromTime(d),
 				AttendanceStatus: attendance.AttendanceStatus("absant"),
 				LeaveID:          &leave.ID,

@@ -59,7 +59,6 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 		Sender:    *sender,
 		Receivers: receivers,
 		Content:   req.Content,
-		IsSeen:    req.IsSeen,
 	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -77,8 +76,8 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 }
 
 func (h *NotificationHandler) GetAllNotificationsByReceiver(c *gin.Context) {
-	userID := c.Param("id")
-	res, err := h.service.ListAllNotificationsByReceiver(c.Request.Context(), userID)
+	email := c.Param("email")
+	res, err := h.service.ListAllNotificationsByReceiver(c.Request.Context(), email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -89,6 +88,24 @@ func (h *NotificationHandler) GetAllNotificationsByReceiver(c *gin.Context) {
 func (h *NotificationHandler) GetSingleNotification(c *gin.Context) {
 	notiID := c.Param("id")
 	res, err := h.service.GetNotificationByID(c.Request.Context(), notiID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, res)
+}
+
+func (h *NotificationHandler) MarkNotificationAsSeen(c *gin.Context) {
+	notiID := c.Param("id")
+	var req struct {
+		Email string `json:"email"`
+	}
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	res, err := h.service.MarkNotificationAsSeenByEmail(c.Request.Context(), notiID, req.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -28,9 +28,9 @@ type Sender struct {
 }
 
 type Receiver struct {
-	ID    primitive.ObjectID `bson:"id" json:"id"`
-	Name  string             `bson:"name" json:"name"`
-	Email string             `bson:"email" json:"email"`
+	Name   string `bson:"name" json:"name"`
+	Email  string `bson:"email" json:"email"`
+	IsSeen bool   `bson:"is_seen" json:"is_seen"`
 }
 
 type Notification struct {
@@ -39,7 +39,6 @@ type Notification struct {
 	Sender    Sender             `bson:"sender" json:"sender"`
 	Receivers []Receiver         `bson:"receivers" json:"receivers"`
 	Content   string             `bson:"content" json:"content"`
-	IsSeen    bool               `bson:"is_seen" json:"is_seen"`
 	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }
