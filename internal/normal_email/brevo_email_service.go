@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"strings"
 	"time"
 )
 
@@ -21,11 +21,7 @@ type brevoService struct {
 	client    *http.Client
 }
 
-func NewBrevoService() EmailService {
-	apiKey := os.Getenv("BREVO_API_KEY")
-	fromEmail := os.Getenv("EMAIL_FROM")
-	fromName := os.Getenv("EMAIL_FROM_NAME")
-
+func NewBrevoService(apiKey, fromEmail, fromName string) EmailService {
 	if apiKey == "" {
 		log.Fatal("BREVO_API_KEY environment variable is required")
 	}
@@ -41,7 +37,7 @@ func NewBrevoService() EmailService {
 	log.Printf("📧 Brevo service initialized with From: %s <%s>", fromName, fromEmail)
 
 	return &brevoService{
-		apiKey:    apiKey,
+		apiKey:    strings.TrimSpace(apiKey),
 		fromEmail: fromEmail,
 		fromName:  fromName,
 		client:    &http.Client{Timeout: 30 * time.Second},

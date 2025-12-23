@@ -59,7 +59,7 @@ func (a *App) initModules() {
 	a.UserHandler = user.NewUserHandler(userService)
 	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)
 
-	a.NormalEmailService = normal_email.NewBrevoService()
+	a.NormalEmailService = normal_email.NewBrevoService(a.Config.BrevoAPIKey, a.Config.EmailFrom, a.Config.EmailFromName)
 	notificationRepo := notification.NewNotificationRepository(a.DB.DB)
 	notificationService := notification.NewNotificationService(notificationRepo, *a.Utilities, a.NormalEmailService, userService)
 	a.NotificationHandler = notification.NewNotificationHandler(notificationService, userService)
