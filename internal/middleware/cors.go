@@ -21,7 +21,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+		MaxAge:           168 * time.Hour,
 	}
 
 	return cors.New(config)
