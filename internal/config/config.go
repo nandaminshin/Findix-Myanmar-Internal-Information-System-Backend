@@ -8,11 +8,14 @@ import (
 )
 
 type Config struct {
-	AppEnv    string
-	Port      string
-	MongoURI  string
-	MongoDB   string
-	JWTSecret string
+	AppEnv        string
+	Port          string
+	MongoURI      string
+	MongoDB       string
+	JWTSecret     string
+	BrevoAPIKey   string
+	EmailFrom     string
+	EmailFromName string
 }
 
 func LoadConfig() (*Config, error) {
@@ -26,11 +29,14 @@ func LoadConfig() (*Config, error) {
 		log.Printf("✅ Loaded .env file for local development")
 	}
 	cfg := &Config{
-		AppEnv:    getEnv("APP_ENV", "development"),
-		Port:      getEnv("PORT", "8080"),
-		MongoURI:  getEnv("MONGO_URI", "mongodb://localhost:27018"),
-		MongoDB:   getEnv("MONGO_DB", "fmiis"),
-		JWTSecret: getEnv("JWT_SECRET", "change-me"),
+		AppEnv:        getEnv("APP_ENV", "development"),
+		Port:          getEnv("PORT", "8080"),
+		MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27018"),
+		MongoDB:       getEnv("MONGO_DB", "fmiis"),
+		JWTSecret:     getEnv("JWT_SECRET", "change-me"),
+		BrevoAPIKey:   getEnv("BREVO_API_KEY", ""),
+		EmailFrom:     getEnv("EMAIL_FROM", "fmiis.app@gmail.com"),
+		EmailFromName: getEnv("EMAIL_FROM_NAME", "FMIIS"),
 	}
 
 	return cfg, nil
