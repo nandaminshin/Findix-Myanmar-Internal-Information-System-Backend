@@ -11,6 +11,7 @@ import (
 	"fmiis/internal/middleware"
 	"fmiis/internal/normal_email"
 	"fmiis/internal/notification"
+	"fmiis/internal/storage"
 	"fmiis/internal/user"
 	"log"
 	"strings"
@@ -23,7 +24,7 @@ type App struct {
 	Config              *config.Config
 	DB                  *database.MongoInstance
 	SocketServer        *socketio.Server
-	UploadBaseDir       string
+	StorageService      storage.StorageService
 	AuthHandler         *auth.Handler
 	UserHandler         *user.UserHandler
 	AuthMiddleware      middleware.AuthMiddleware
@@ -34,17 +35,19 @@ type App struct {
 	LeaveHandler        *leave.LeaveHandler
 }
 
-func NewApp(cfg *config.Config, server socketio.Server, uploadBaseDir string) (*App, error) {
+func NewApp(cfg *config.Config, server socketio.Server) (*App, error) {
 	db, err := database.ConnectMongo(cfg.MongoURI, cfg.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
+	storageService := storage.NewSupabaseStorage(cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.SupabaseBucket)
+
 	a := &App{
-		Config:        cfg,
-		DB:            db,
-		SocketServer:  &server,
-		UploadBaseDir: uploadBaseDir,
+		Config:         cfg,
+		DB:             db,
+		SocketServer:   &server,
+		StorageService: storageService,
 	}
 	a.initModules()
 	return a, nil
@@ -54,7 +57,7 @@ func (a *App) initModules() {
 	// Initialize User module
 	userRepo := user.NewUserRepository(a.DB.DB)
 	authService := auth.NewAuthService()
-	userService := user.NewUserService(userRepo, authService, a.SocketServer, a.UploadBaseDir)
+	userService := user.NewUserService(userRepo, authService, a.SocketServer, a.StorageService)
 	a.Utilities = common.NewUtility(userService)
 	a.UserHandler = user.NewUserHandler(userService)
 	a.AuthMiddleware = middleware.NewAuthMiddleware(authService)

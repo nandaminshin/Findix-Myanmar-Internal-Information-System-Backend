@@ -11,9 +11,6 @@ func RegisterRoutes(r *gin.Engine, a *App) {
 		c.JSON(200, gin.H{"message": "FMIIS backend server is running"})
 	})
 
-	// Serve static files
-	r.Static("/uploads", a.UploadBaseDir)
-
 	api := r.Group("/api/fmiis-backend/v001")
 	{
 		// PUBLIC routes

@@ -25,6 +25,15 @@ type FamilyInfo struct {
 	Child           int16 `bson:"child" json:"child"`
 }
 
+type LeaveInfo struct {
+	RemainingCasualLeave  int64 `bson:"remaining_casual_leave" json:"remaining_casual_leave"`
+	RemainingEarnedLeave  int64 `bson:"remaining_earned_leave" json:"remaining_earned_leave"`
+	RemainingMedicalLeave int64 `bson:"remaining_medical_leave" json:"remaining_medical_leave"`
+	RemainingSpecialLeave int64 `bson:"remaining_special_leave" json:"remaining_special_leave"`
+	UnpaidLeave           int64 `bson:"unpaid_leave" json:"unpaid_leave"`
+	PrepaidLeave          int64 `bson:"prepaid_leave" json:"prepaid_leave"`
+}
+
 type User struct {
 	ID               primitive.ObjectID `bson:"_id" json:"id"`
 	Name             string             `bson:"name" json:"name"`
@@ -44,6 +53,7 @@ type User struct {
 	EmergencyAddress string             `bson:"emergency_address" json:"emergency_address"`
 	EmergencyPhone   string             `bson:"emergency_phone" json:"emergency_phone"`
 	FamilyInfo       FamilyInfo         `bson:"family_info" json:"family_info"`
+	LeaveInfo        LeaveInfo          `bson:"leave_info" json:"leave_info"`
 	Note             string             `bson:"note" json:"note"`
 	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt        time.Time          `bson:"updated_at" json:"updated_at"`

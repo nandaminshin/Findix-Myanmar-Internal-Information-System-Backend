@@ -53,6 +53,7 @@ type GmUpdateRequest struct {
 	EmergencyAddress string     `json:"emergency_address" binding:"required"`
 	EmergencyPhone   string     `json:"emergency_phone" binding:"required"`
 	FamilyInfo       FamilyInfo `json:"family_info" binding:"required"`
+	LeaveInfo        LeaveInfo  `json:"leave_info" binding:"required"`
 	Note             string     `json:"note"`
 	SecretCode       string     `json:"secret_code" binding:"required"`
 	Image            string     `json:"image,omitempty"`

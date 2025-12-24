@@ -73,10 +73,12 @@ func (h *UserHandler) GmUpdate(c *gin.Context) {
 		return
 	}
 	authUserRole := c.MustGet("role").(string)
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
 	if authUserRole == string(Hr) && (user.Role == Gm || user.Role == Md) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to update this user"})
 		return

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmiis/internal/auth"
+	"fmiis/internal/storage"
 	"fmt"
-	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -34,18 +34,18 @@ type UserService interface {
 }
 
 type userService struct {
-	repo          UserRepository
-	authService   auth.AuthService
-	socketServer  socketio.Server
-	uploadBaseDir string
+	repo           UserRepository
+	authService    auth.AuthService
+	socketServer   socketio.Server
+	storageService storage.StorageService
 }
 
-func NewUserService(repo UserRepository, authService auth.AuthService, server *socketio.Server, uploadBaseDir string) UserService {
+func NewUserService(repo UserRepository, authService auth.AuthService, server *socketio.Server, storageService storage.StorageService) UserService {
 	return &userService{
-		repo:          repo,
-		authService:   authService,
-		socketServer:  *server,
-		uploadBaseDir: uploadBaseDir,
+		repo:           repo,
+		authService:    authService,
+		socketServer:   *server,
+		storageService: storageService,
 	}
 }
 
@@ -90,6 +90,15 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		return nil, err
 	}
 
+	leaveInfo := &LeaveInfo{
+		RemainingCasualLeave:  6,
+		RemainingEarnedLeave:  10,
+		RemainingMedicalLeave: 30,
+		RemainingSpecialLeave: 5,
+		UnpaidLeave:           0,
+		PrepaidLeave:          0,
+	}
+
 	user := &User{
 		Name:             req.Name,
 		Email:            req.Email,
@@ -106,6 +115,7 @@ func (s *userService) Register(ctx context.Context, req *RegisterRequest) (*User
 		EmergencyAddress: req.EmergencyAddress,
 		EmergencyPhone:   req.EmergencyPhone,
 		FamilyInfo:       req.FamilyInfo,
+		LeaveInfo:        *leaveInfo,
 		Note:             req.Note,
 	}
 
@@ -277,6 +287,7 @@ func (s *userService) GmUpdate(ctx context.Context, req *GmUpdateRequest, userID
 		EmergencyAddress: req.EmergencyAddress,
 		EmergencyPhone:   req.EmergencyPhone,
 		FamilyInfo:       req.FamilyInfo,
+		LeaveInfo:        req.LeaveInfo,
 		Note:             req.Note,
 	}
 
@@ -424,43 +435,6 @@ func (s *userService) validateImage(file *multipart.FileHeader) error {
 	return nil
 }
 
-func (s *userService) saveProfilePicture(file *multipart.FileHeader, employeeID string) (string, error) {
-	uploadDir := filepath.Join(s.uploadBaseDir, "employee", "images")
-
-	// ensure folder exists
-	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		return "", err
-	}
-
-	ext := filepath.Ext(file.Filename)
-	// safer filename
-	filename := fmt.Sprintf("fmiis_user_%s%s", employeeID, ext)
-	fullFilePath := filepath.Join(uploadDir, filename)
-
-	if err := SaveMultipartFile(file, fullFilePath); err != nil {
-		return "", err
-	}
-
-	return fullFilePath, nil
-}
-
-func SaveMultipartFile(file *multipart.FileHeader, path string) error {
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
-	dst, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, src)
-	return err
-}
-
 func (s *userService) UpdateProfileImage(ctx context.Context, userID string, file *multipart.FileHeader) (*UserResponse, error) {
 	// 1. Validate file
 	if err := s.validateImage(file); err != nil {
@@ -478,50 +452,24 @@ func (s *userService) UpdateProfileImage(ctx context.Context, userID string, fil
 
 	// 3. Delete old image if exists
 	if user.Image != "" {
-		// Resolve path for deletion
-		var pathToDelete string
-		// Check if it's our web-relative path
-		if strings.HasPrefix(user.Image, "/uploads/") {
-			// Strip /uploads prefix and join with actual base dir
-			cleanPath := strings.TrimPrefix(user.Image, "/uploads")
-			pathToDelete = filepath.Join(s.uploadBaseDir, cleanPath)
-		} else {
-			// Assume it's a legacy absolute path or other format
-			pathToDelete = user.Image
-		}
-
-		if err := os.Remove(pathToDelete); err != nil {
-			fmt.Printf("Failed to delete old image %s: %v\n", pathToDelete, err)
+		if err := s.storageService.Delete(user.Image); err != nil {
+			// Log error but continue? Or fail?
+			// Usually logging is better to avoid blocking update if delete fails (e.g. file already gone)
+			fmt.Printf("Failed to delete old image %s: %v\n", user.Image, err)
 		}
 	}
 
-	// 4. Save new file
-	fullFilePath, err := s.saveProfilePicture(file, userID)
+	// 4. Upload new file
+	ext := filepath.Ext(file.Filename)
+	filename := fmt.Sprintf("fmiis_user_%s%s", userID, ext)
+
+	publicUrl, err := s.storageService.Upload(file, filename)
 	if err != nil {
 		return nil, err
 	}
 
-	// Construct relative path for DB/Frontend
-	// fullFilePath is like /path/to/app/uploads/employee/images/file.png
-	// We want /uploads/employee/images/file.png
-	// s.uploadBaseDir is /path/to/app/uploads
-
-	// Ensure uniform separators
-	relPath, err := filepath.Rel(s.uploadBaseDir, fullFilePath)
-	if err != nil {
-		// Fallback to full path or error?
-		// If Rel fails, something weird. Just use full path as fallback or log.
-		// Usually won't fail if fullFilePath is inside uploadBaseDir.
-		relPath = filepath.Base(fullFilePath) // Too risky?
-	}
-
-	// filepath.Rel returns "employee/images/file.png" (no leading slash)
-	// We want "/uploads/" + relPath
-	// Use slashes for URL compatibility
-	urlPath := "/uploads/" + filepath.ToSlash(relPath)
-
 	// 5. Update user in DB
-	user.Image = urlPath
+	user.Image = publicUrl
 	if err := s.repo.Update(ctx, user.ID, user); err != nil {
 		return nil, err
 	}
